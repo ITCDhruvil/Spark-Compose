@@ -67,7 +67,6 @@ export function RichEditor({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [focusMode, setFocusMode] = useState(false)
   const [spellCheck, setSpellCheck] = useState(true)
-  const autocompleteEnabled = useAiStore((s) => s.autocompleteEnabled)
 
   const editor = useEditor({
     extensions: [
@@ -102,7 +101,7 @@ export function RichEditor({
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       SlashCommands,
       SmartPaste,
-      AiAutocomplete.configure({ enabled: () => autocompleteEnabled }),
+      AiAutocomplete.configure({ enabled: () => useAiStore.getState().autocompleteEnabled }),
     ],
     content: parseContent(content),
     autofocus,

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
+import { create } from 'zustand'
 import { AiAutocomplete } from './ai-autocomplete'
 import * as aiClient from '@/lib/api/ai-client'
 
@@ -141,6 +142,33 @@ describe('AiAutocomplete extension', () => {
     expect(editor.getText()).not.toContain('hello there')
     expect(abortSpy).toHaveBeenCalledTimes(1)
 
+    editor.destroy()
+  })
+
+  it('reads a live external store value on each check instead of a stale closure (regression for stale-closure toggle bug)', async () => {
+    const useFakeStore = create<{ enabled: boolean }>(() => ({ enabled: true }))
+    const completeSpy = vi.spyOn(aiClient.aiApi, 'complete').mockClear().mockReturnValue((async function* () {})())
+
+    // Extension is configured once, mirroring how useEditor() has no deps array
+    // and only ever reads options.enabled at call time (not at configure time).
+    const editor = new Editor({
+      extensions: [
+        StarterKit,
+        AiAutocomplete.configure({ enabled: () => useFakeStore.getState().enabled }),
+      ],
+      content: '<p>hello</p>',
+    })
+
+    // Flip the store after the extension was already created - simulating toggling
+    // the switch after the editor has mounted.
+    useFakeStore.setState({ enabled: false })
+
+    editor.commands.setTextSelection(editor.state.doc.content.size - 1)
+    editor.view.dispatch(editor.state.tr)
+    vi.advanceTimersByTime(500)
+    await Promise.resolve()
+
+    expect(completeSpy).not.toHaveBeenCalled()
     editor.destroy()
   })
 })

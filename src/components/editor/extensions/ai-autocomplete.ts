@@ -7,6 +7,14 @@ const DEBOUNCE_MS = 400
 const MIN_BEFORE_CHARS = 3
 const pluginKey = new PluginKey('aiAutocomplete')
 
+declare module '@tiptap/core' {
+  interface Storage {
+    aiAutocomplete: {
+      ghostText: string | null
+    }
+  }
+}
+
 export interface AiAutocompleteOptions {
   enabled: () => boolean
   scope?: () => 'word' | 'sentence' | 'paragraph'
