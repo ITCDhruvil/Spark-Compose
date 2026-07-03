@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { Dialog } from '@/components/ui/dialog'
 import { aiApi } from '@/lib/api/ai-client'
@@ -16,14 +16,30 @@ export function AiTranslateModal({ open, onClose, editor }: AiTranslateModalProp
   const [lang, setLang] = useState(TRANSLATE_LANGUAGE_GROUPS[0]?.options[0]?.value ?? '')
   const [status, setStatus] = useState<'idle' | 'streaming' | 'done' | 'error'>('idle')
   const [result, setResult] = useState('')
+  const abortRef = useRef<AbortController | null>(null)
+  const rangeRef = useRef<{ from: number; to: number } | null>(null)
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!open) {
+      abortRef.current?.abort()
+    }
+  }, [open])
 
   const run = useCallback(async () => {
     const { from, to } = editor.state.selection
     const text = editor.state.doc.textBetween(from, to, '\n')
     if (!text.trim()) return
+    rangeRef.current = { from, to }
     setResult('')
     setStatus('streaming')
     const ctrl = new AbortController()
+    abortRef.current = ctrl
     try {
       for await (const raw of aiApi.translate({ text, targetLang: lang }, ctrl.signal)) {
         const evt = JSON.parse(raw) as { type: string; delta?: string }
@@ -36,8 +52,8 @@ export function AiTranslateModal({ open, onClose, editor }: AiTranslateModalProp
   }, [editor, lang])
 
   const accept = useCallback(() => {
-    const { from, to } = editor.state.selection
-    editor.chain().focus().insertContentAt({ from, to }, result).run()
+    const range = rangeRef.current ?? editor.state.selection
+    editor.chain().focus().insertContentAt({ from: range.from, to: range.to }, result).run()
     setResult('')
     setStatus('idle')
     onClose()

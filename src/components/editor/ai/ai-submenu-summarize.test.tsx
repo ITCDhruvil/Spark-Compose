@@ -46,4 +46,24 @@ describe('AiSummarizeSubmenu', () => {
     expect(screen.getByText('Copy to clipboard')).toBeInTheDocument()
     editor.destroy()
   })
+
+  it('aborts the in-flight stream when unmounted before it finishes', async () => {
+    const abortSpy = vi.fn()
+    async function* fakeStream(_req: unknown, signal: AbortSignal) {
+      signal.addEventListener('abort', abortSpy)
+      yield JSON.stringify({ type: 'token', delta: 'Result' })
+      await new Promise(() => {})
+    }
+    vi.spyOn(aiClient.aiApi, 'summarize').mockImplementation(fakeStream as any)
+    const editor = makeEditor()
+    const { unmount } = render(<AiSummarizeSubmenu editor={editor} />)
+
+    fireEvent.click(screen.getByText('Whole doc'))
+    await waitFor(() => expect(screen.getByText('Result')).toBeInTheDocument())
+
+    unmount()
+
+    expect(abortSpy).toHaveBeenCalledTimes(1)
+    editor.destroy()
+  })
 })

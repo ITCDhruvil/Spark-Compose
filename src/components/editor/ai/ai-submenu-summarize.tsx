@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { Check, Copy } from 'lucide-react'
 import { aiApi } from '@/lib/api/ai-client'
@@ -17,6 +17,13 @@ export function AiSummarizeSubmenu({ editor }: { editor: Editor }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'streaming' | 'done' | 'error'>('idle')
   const [result, setResult] = useState('')
   const [copied, setCopied] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
 
   const run = useCallback(async (scope: 'selection' | 'doc') => {
     const { from, to, empty } = editor.state.selection
@@ -28,6 +35,7 @@ export function AiSummarizeSubmenu({ editor }: { editor: Editor }) {
     setStatus('loading')
     setResult('')
     const ctrl = new AbortController()
+    abortRef.current = ctrl
     try {
       for await (const raw of aiApi.summarize({ text, length }, ctrl.signal)) {
         const evt = JSON.parse(raw) as { type: string; delta?: string }

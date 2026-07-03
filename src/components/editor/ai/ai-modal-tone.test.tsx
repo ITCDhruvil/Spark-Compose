@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { AiToneModal } from './ai-modal-tone'
@@ -48,5 +48,48 @@ describe('AiToneModal', () => {
 
     expect(spy).not.toHaveBeenCalled()
     editor.destroy()
+  })
+
+  it('aborts the in-flight stream when unmounted before it finishes', async () => {
+    const abortSpy = vi.fn()
+    async function* fakeStream(_req: unknown, signal: AbortSignal) {
+      signal.addEventListener('abort', abortSpy)
+      yield JSON.stringify({ type: 'token', delta: 'Greetings' })
+      await new Promise(() => {})
+    }
+    vi.spyOn(aiClient.aiApi, 'customTone').mockImplementation(fakeStream as any)
+    const editor = makeEditorWithSelection()
+    const { unmount } = render(<AiToneModal open={true} onClose={() => {}} editor={editor} />)
+
+    fireEvent.change(screen.getByPlaceholderText(/rewrite as/i), { target: { value: 'formal' } })
+    fireEvent.click(screen.getByText('Apply to selection'))
+    await waitFor(() => expect(screen.getByText('Greetings')).toBeInTheDocument())
+
+    unmount()
+
+    expect(abortSpy).toHaveBeenCalledTimes(1)
+    editor.destroy()
+  })
+
+  it('aborts the in-flight stream when closed before it finishes', async () => {
+    const abortSpy = vi.fn()
+    async function* fakeStream(_req: unknown, signal: AbortSignal) {
+      signal.addEventListener('abort', abortSpy)
+      yield JSON.stringify({ type: 'token', delta: 'Greetings' })
+      await new Promise(() => {})
+    }
+    vi.spyOn(aiClient.aiApi, 'customTone').mockImplementation(fakeStream as any)
+    const editor = makeEditorWithSelection()
+    const { rerender } = render(<AiToneModal open={true} onClose={() => {}} editor={editor} />)
+
+    fireEvent.change(screen.getByPlaceholderText(/rewrite as/i), { target: { value: 'formal' } })
+    fireEvent.click(screen.getByText('Apply to selection'))
+    await waitFor(() => expect(screen.getByText('Greetings')).toBeInTheDocument())
+
+    rerender(<AiToneModal open={false} onClose={() => {}} editor={editor} />)
+
+    expect(abortSpy).toHaveBeenCalledTimes(1)
+    editor.destroy()
+    cleanup()
   })
 })
