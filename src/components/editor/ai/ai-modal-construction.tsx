@@ -89,7 +89,7 @@ export function AiConstructionModal({ open, onClose, editor }: AiConstructionMod
         const ing = await ragApi.ingest({ notes: referenceNotes, file: refDocFile ?? undefined })
         sourceId = ing.sourceId
         setReferenceSourceId(ing.sourceId)
-        if (ing.warnings?.length) setWarnings(ing.warnings)
+        if (ing.warnings?.length) setWarnings((w) => [...w, ...ing.warnings])
       }
 
       if (photoFile) {
