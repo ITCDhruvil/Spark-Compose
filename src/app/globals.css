@@ -293,6 +293,12 @@
 .editor-drag-handle:active { cursor: grabbing; }
 .editor-drag-handle:hover { background: hsl(var(--muted)); }
 
+/* AI ghost text */
+.ai-ghost-text {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
 @media print {
   .editor-drag-handle,
   .border-b.bg-\[\#f3f3f3\] { display: none !important; }

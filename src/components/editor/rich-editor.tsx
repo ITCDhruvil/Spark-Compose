@@ -32,6 +32,8 @@ import { TocSidebar } from './toc-sidebar'
 import { AutosaveIndicator } from './autosave-indicator'
 import { SlashCommands } from './slash-commands'
 import { SmartPaste } from './smart-paste'
+import { AiAutocomplete } from './extensions/ai-autocomplete'
+import { useAiStore } from '@/lib/store/use-ai-store'
 import { FontSize } from './extensions/font-size'
 import { ResizableImage } from './extensions/resizable-image'
 import { Callout } from './extensions/callout'
@@ -65,6 +67,7 @@ export function RichEditor({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [focusMode, setFocusMode] = useState(false)
   const [spellCheck, setSpellCheck] = useState(true)
+  const autocompleteEnabled = useAiStore((s) => s.autocompleteEnabled)
 
   const editor = useEditor({
     extensions: [
@@ -99,6 +102,7 @@ export function RichEditor({
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       SlashCommands,
       SmartPaste,
+      AiAutocomplete.configure({ enabled: () => autocompleteEnabled }),
     ],
     content: parseContent(content),
     autofocus,

@@ -62,6 +62,7 @@ export function useToolbarOverflow(segmentCount: number) {
 export type ToolbarSegmentId =
   | 'history'
   | 'styles'
+  | 'ai'
   | 'format'
   | 'colors'
   | 'clearFormat'
@@ -83,6 +84,7 @@ export type ToolbarSegmentId =
 export const TOOLBAR_SEGMENT_ORDER: ToolbarSegmentId[] = [
   'history',
   'styles',
+  'ai',
   'format',
   'colors',
   'clearFormat',

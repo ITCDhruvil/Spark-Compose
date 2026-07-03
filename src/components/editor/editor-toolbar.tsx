@@ -14,6 +14,7 @@ import { ToolbarPopover } from './toolbar-popover'
 import { TableGridPicker } from './table-grid-picker'
 import { ColorPickerGrid } from './color-picker-grid'
 import { EditorMoreMenu } from './editor-more-menu'
+import { AiDropdown } from './ai/ai-dropdown'
 import { canLiftListItem, canSinkListItem, liftListItem, sinkListItem } from './editor-list-utils'
 import {
   FONT_FAMILIES, FONT_SIZES, TEXT_COLORS, HIGHLIGHT_COLORS,
@@ -282,6 +283,12 @@ export function EditorToolbar({
             </button>
           ))}
         </ToolbarPopover>
+        <Divider />
+      </SegmentWrap>
+    ),
+    ai: (
+      <SegmentWrap>
+        <AiDropdown editor={editor} />
         <Divider />
       </SegmentWrap>
     ),

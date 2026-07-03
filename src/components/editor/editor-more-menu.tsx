@@ -17,6 +17,7 @@ import type { CalloutType } from './extensions/callout'
 import { BULLET_LIST_STYLES, ORDERED_LIST_STYLES } from './extensions/list-style'
 import { liftListItem, sinkListItem } from './editor-list-utils'
 import type { ToolbarSegmentId } from './use-toolbar-overflow'
+import { AiDropdown } from './ai/ai-dropdown'
 
 interface EditorMoreMenuProps {
   editor: Editor
@@ -100,6 +101,15 @@ function OverflowItems({
 
   return (
     <>
+      {has('ai') && (
+        <>
+          <div className="px-3 py-1.5">
+            <AiDropdown editor={editor} />
+          </div>
+          <div className="border-t my-1" />
+        </>
+      )}
+
       {has('clearFormat') && (
         <MenuItem onClick={() => { editor.chain().focus().unsetAllMarks().clearNodes().run(); close() }}>
           <RemoveFormatting className="w-4 h-4" /> Clear formatting
