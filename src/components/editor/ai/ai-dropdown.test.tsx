@@ -19,7 +19,7 @@ describe('AiDropdown', () => {
   it('opens the popover listing all 7 feature rows on click', () => {
     const editor = makeEditor()
     render(<AiDropdown editor={editor} />)
-    fireEvent.click(screen.getByTitle('AI features'))
+    fireEvent.mouseDown(screen.getByTitle('AI features'))
 
     expect(screen.getByText('Autocomplete')).toBeInTheDocument()
     expect(screen.getByText('Improve doc')).toBeInTheDocument()
@@ -34,17 +34,17 @@ describe('AiDropdown', () => {
   it('opens the Translate modal when its row is clicked', () => {
     const editor = makeEditor()
     render(<AiDropdown editor={editor} />)
-    fireEvent.click(screen.getByTitle('AI features'))
-    fireEvent.click(screen.getByText('Translate'))
-    expect(screen.getAllByText('Translate').length).toBeGreaterThan(1)
+    fireEvent.mouseDown(screen.getByTitle('AI features'))
+    fireEvent.mouseDown(screen.getByText('Translate'))
+    expect(screen.getByText('Translate selection')).toBeInTheDocument()
     editor.destroy()
   })
 
   it('opens the Construction draft modal when its row is clicked', () => {
     const editor = makeEditor()
     render(<AiDropdown editor={editor} />)
-    fireEvent.click(screen.getByTitle('AI features'))
-    fireEvent.click(screen.getByText('Construction draft'))
+    fireEvent.mouseDown(screen.getByTitle('AI features'))
+    fireEvent.mouseDown(screen.getByText('Construction draft'))
     expect(screen.getByPlaceholderText(/topic/i)).toBeInTheDocument()
     editor.destroy()
   })

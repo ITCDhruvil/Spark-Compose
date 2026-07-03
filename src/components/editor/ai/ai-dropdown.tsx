@@ -32,7 +32,7 @@ export function AiDropdown({ editor }: { editor: Editor }) {
         ref={triggerRef}
         type="button"
         title="AI features"
-        onClick={() => setOpen((o) => !o)}
+        onMouseDown={(e) => { e.preventDefault(); setOpen((o) => !o) }}
         className="h-7 flex items-center gap-1 px-2 rounded-[3px] text-xs hover:bg-[#e8e8e8] dark:hover:bg-white/10 shrink-0 border border-[#d1d1d1] dark:border-border bg-white dark:bg-background"
       >
         <Sparkles className="w-3.5 h-3.5" />
@@ -62,21 +62,21 @@ export function AiDropdown({ editor }: { editor: Editor }) {
         <div className="border-t my-1" />
         <button
           type="button"
-          onClick={() => setTranslateOpen(true)}
+          onMouseDown={(e) => { e.preventDefault(); setOpen(false); setTranslateOpen(true) }}
           className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted"
         >
           Translate
         </button>
         <button
           type="button"
-          onClick={() => setToneOpen(true)}
+          onMouseDown={(e) => { e.preventDefault(); setOpen(false); setToneOpen(true) }}
           className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted"
         >
           Custom tone
         </button>
         <button
           type="button"
-          onClick={() => setConstructionOpen(true)}
+          onMouseDown={(e) => { e.preventDefault(); setOpen(false); setConstructionOpen(true) }}
           className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted font-medium"
         >
           Construction draft
