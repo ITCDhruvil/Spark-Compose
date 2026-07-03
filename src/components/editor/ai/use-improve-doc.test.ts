@@ -12,7 +12,7 @@ afterEach(() => {
 function makeEditor() {
   return new Editor({
     extensions: [StarterKit],
-    content: '<p>First paragraph.</p><p>Second paragraph.</p>',
+    content: '<p>First paragraph with enough length.</p><p>Second paragraph with enough length.</p>',
   })
 }
 
@@ -62,7 +62,7 @@ describe('useImproveDoc', () => {
     )
     const editor = new Editor({
       extensions: [StarterKit],
-      content: '<p>Only paragraph.</p><p></p>',
+      content: '<p>Only paragraph with enough length.</p><p></p>',
     })
     const { result } = renderHook(() => useImproveDoc(editor))
 
@@ -87,6 +87,29 @@ describe('useImproveDoc', () => {
     })
 
     expect(result.current.progress).toEqual({ current: 2, total: 2 })
+    editor.destroy()
+  })
+
+  it('skips blocks under the minimum length gate and leaves their text unchanged', async () => {
+    async function* fakeStream(text: string) {
+      yield JSON.stringify({ type: 'token', delta: text })
+    }
+    const spy = vi.spyOn(aiClient.aiApi, 'rewrite').mockImplementation((req) =>
+      fakeStream(`${req.selection} improved`),
+    )
+    const editor = new Editor({
+      extensions: [StarterKit],
+      content: '<p>This is a sufficiently long paragraph to pass the gate.</p><p>Hi</p>',
+    })
+    const { result } = renderHook(() => useImproveDoc(editor))
+
+    await act(async () => {
+      await result.current.run()
+    })
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][0].selection).toContain('sufficiently long paragraph')
+    expect(editor.getText()).toContain('Hi')
     editor.destroy()
   })
 })
