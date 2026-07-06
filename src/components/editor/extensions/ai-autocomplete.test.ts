@@ -121,7 +121,9 @@ describe('AiAutocomplete extension', () => {
       // simulate a pending stream that never resolves further without abort
       await new Promise(() => {})
     }
-    vi.spyOn(aiClient.aiApi, 'complete').mockImplementation(fakeStream as any)
+    vi.spyOn(aiClient.aiApi, 'complete').mockImplementation(
+      fakeStream as typeof aiClient.aiApi.complete,
+    )
 
     const editor = new Editor({
       extensions: [StarterKit, AiAutocomplete.configure({ enabled: () => true })],

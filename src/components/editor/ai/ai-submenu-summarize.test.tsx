@@ -10,40 +10,34 @@ function makeEditor() {
 }
 
 describe('AiSummarizeSubmenu', () => {
-  it('renders scope and length controls', () => {
+  it('renders length options', () => {
     const editor = makeEditor()
     render(<AiSummarizeSubmenu editor={editor} />)
     expect(screen.getByText('Summarize')).toBeInTheDocument()
+    expect(screen.getByText('Short')).toBeInTheDocument()
+    expect(screen.getByText('Medium')).toBeInTheDocument()
+    expect(screen.getByText('Detailed')).toBeInTheDocument()
     editor.destroy()
   })
 
-  it('calls aiApi.summarize with whole-doc text when Whole doc clicked', async () => {
+  it('streams summary into the editor and offers confirm/cancel', async () => {
     async function* fakeStream() {
       yield JSON.stringify({ type: 'token', delta: 'Summary text' })
     }
     const spy = vi.spyOn(aiClient.aiApi, 'summarize').mockReturnValue(fakeStream())
     const editor = makeEditor()
+    editor.commands.selectAll()
     render(<AiSummarizeSubmenu editor={editor} />)
 
-    fireEvent.click(screen.getByText('Whole doc'))
+    fireEvent.click(screen.getByText('Medium'))
 
     await waitFor(() => expect(spy).toHaveBeenCalled())
     expect(spy.mock.calls[0][0].text).toContain('Some long document text')
-    editor.destroy()
-  })
+    expect(spy.mock.calls[0][0].length).toBe('medium')
 
-  it('displays streamed summary text and offers copy', async () => {
-    async function* fakeStream() {
-      yield JSON.stringify({ type: 'token', delta: 'Result' })
-    }
-    vi.spyOn(aiClient.aiApi, 'summarize').mockReturnValue(fakeStream())
-    const editor = makeEditor()
-    render(<AiSummarizeSubmenu editor={editor} />)
-
-    fireEvent.click(screen.getByText('Whole doc'))
-
-    await waitFor(() => expect(screen.getByText('Result')).toBeInTheDocument())
-    expect(screen.getByText('Copy to clipboard')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Confirm')).toBeInTheDocument())
+    expect(screen.getByText('Cancel')).toBeInTheDocument()
+    expect(editor.getText()).toContain('Summary text')
     editor.destroy()
   })
 
@@ -54,16 +48,17 @@ describe('AiSummarizeSubmenu', () => {
       yield JSON.stringify({ type: 'token', delta: 'Result' })
       await new Promise(() => {})
     }
-    vi.spyOn(aiClient.aiApi, 'summarize').mockImplementation(fakeStream as any)
+    vi.spyOn(aiClient.aiApi, 'summarize').mockImplementation(fakeStream as never)
     const editor = makeEditor()
+    editor.commands.selectAll()
     const { unmount } = render(<AiSummarizeSubmenu editor={editor} />)
 
-    fireEvent.click(screen.getByText('Whole doc'))
-    await waitFor(() => expect(screen.getByText('Result')).toBeInTheDocument())
+    fireEvent.click(screen.getByText('Short'))
+    await waitFor(() => expect(editor.getText()).toContain('Result'))
 
     unmount()
 
-    expect(abortSpy).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(abortSpy).toHaveBeenCalledTimes(1))
     editor.destroy()
   })
 })

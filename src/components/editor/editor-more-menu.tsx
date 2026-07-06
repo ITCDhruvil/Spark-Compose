@@ -15,6 +15,7 @@ import {
 } from './editor-export'
 import type { CalloutType } from './extensions/callout'
 import { BULLET_LIST_STYLES, ORDERED_LIST_STYLES } from './extensions/list-style'
+import { ListStylePreview } from './list-style-preview'
 import { liftListItem, sinkListItem } from './editor-list-utils'
 import type { ToolbarSegmentId } from './use-toolbar-overflow'
 import { AiDropdown } from './ai/ai-dropdown'
@@ -47,7 +48,7 @@ function MenuItem({
       type="button"
       title={title}
       onMouseDown={(e) => { e.preventDefault(); onClick() }}
-      className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-sm text-left"
+      className="grid w-full grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2.5 px-3 py-1.5 text-sm hover:bg-muted rounded-sm text-left"
     >
       {children}
     </button>
@@ -129,24 +130,29 @@ function OverflowItems({
             <>
               <p className="px-3 py-1 text-[10px] uppercase text-muted-foreground font-medium">Lists</p>
               <MenuItem onClick={() => { editor.chain().focus().toggleBulletList().run(); close() }}>
-                <List className="w-4 h-4" /> Bulleted list
+                <span className="list-style-preview-slot flex items-center justify-center"><List className="w-4 h-4" /></span>
+                <span>Bulleted list</span>
               </MenuItem>
               <MenuItem onClick={() => { editor.chain().focus().toggleOrderedList().run(); close() }}>
-                <ListOrdered className="w-4 h-4" /> Numbered list
+                <span className="list-style-preview-slot flex items-center justify-center"><ListOrdered className="w-4 h-4" /></span>
+                <span>Numbered list</span>
               </MenuItem>
               <MenuItem onClick={() => { editor.chain().focus().toggleTaskList().run(); close() }}>
-                <CheckSquare className="w-4 h-4" /> Checklist
+                <span className="list-style-preview-slot flex items-center justify-center"><CheckSquare className="w-4 h-4" /></span>
+                <span>Checklist</span>
               </MenuItem>
               <p className="px-3 pt-1 pb-0.5 text-[10px] uppercase text-muted-foreground font-medium">Bullet style</p>
               {BULLET_LIST_STYLES.map((s) => (
                 <MenuItem key={s.value} onClick={() => { editor.chain().focus().setBulletListStyle(s.value).run(); close() }}>
-                  {s.label}
+                  <ListStylePreview value={s.value} preview={s.preview} />
+                  <span>{s.label}</span>
                 </MenuItem>
               ))}
               <p className="px-3 pt-1 pb-0.5 text-[10px] uppercase text-muted-foreground font-medium">Number style</p>
               {ORDERED_LIST_STYLES.map((s) => (
                 <MenuItem key={s.value} onClick={() => { editor.chain().focus().setOrderedListStyle(s.value).run(); close() }}>
-                  {s.label}
+                  <ListStylePreview value={s.value} preview={s.preview} />
+                  <span>{s.label}</span>
                 </MenuItem>
               ))}
             </>
@@ -363,7 +369,7 @@ export function EditorMoreMenu({
         <ChevronDown className="w-3 h-3 opacity-60" />
       </button>
 
-      <ToolbarPopover open={open} anchorRef={anchorRef} onClose={() => setOpen(false)} className="py-1 min-w-[220px] max-h-[70vh] overflow-y-auto">
+      <ToolbarPopover open={open} anchorRef={anchorRef} onClose={() => setOpen(false)} align="end" className="py-1 min-w-[220px]">
         <OverflowItems
           editor={editor}
           segments={segmentSet}

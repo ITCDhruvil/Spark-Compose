@@ -71,6 +71,7 @@ export type ToolbarSegmentId =
   | 'indent'
   | 'insert'
   | 'blocks'
+  | 'toc'
   | 'shortcuts'
   | 'findReplace'
   | 'comment'
@@ -93,6 +94,7 @@ export const TOOLBAR_SEGMENT_ORDER: ToolbarSegmentId[] = [
   'indent',
   'insert',
   'blocks',
+  'toc',
   'shortcuts',
   'findReplace',
   'comment',

@@ -3,7 +3,12 @@ import { useAiStore } from './use-ai-store'
 
 describe('useAiStore toggles', () => {
   beforeEach(() => {
-    useAiStore.setState({ autocompleteEnabled: true, improveEnabled: true })
+    useAiStore.setState({
+      autocompleteEnabled: true,
+      improveEnabled: true,
+      spellingEnabled: false,
+      grammarEnabled: false,
+    })
   })
 
   it('setAutocompleteEnabled flips the flag', () => {
@@ -14,6 +19,15 @@ describe('useAiStore toggles', () => {
   it('setImproveEnabled flips the flag', () => {
     useAiStore.getState().setImproveEnabled(false)
     expect(useAiStore.getState().improveEnabled).toBe(false)
+  })
+
+  it('spelling and grammar default off and can be enabled', () => {
+    expect(useAiStore.getState().spellingEnabled).toBe(false)
+    expect(useAiStore.getState().grammarEnabled).toBe(false)
+    useAiStore.getState().setSpellingEnabled(true)
+    useAiStore.getState().setGrammarEnabled(true)
+    expect(useAiStore.getState().spellingEnabled).toBe(true)
+    expect(useAiStore.getState().grammarEnabled).toBe(true)
   })
 })
 

@@ -83,20 +83,42 @@ export function ImageDialog({
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm hover:bg-muted disabled:opacity-50"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            Upload image
-          </button>
-          {url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="" className="h-12 w-12 rounded object-cover border" />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm hover:bg-muted disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploading ? 'Uploading…' : url ? 'Replace image' : 'Upload image'}
+            </button>
+          </div>
+
+          {url ? (
+            <div className="rounded-lg border bg-muted/20 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="Upload preview" className="max-h-48 w-full object-contain bg-background" />
+              <div className="px-3 py-2 border-t flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Image ready</p>
+                <p className="text-[11px] text-muted-foreground truncate max-w-[70%]" title={url}>
+                  {url.startsWith('data:') ? 'Local preview' : url}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-8 text-center hover:bg-muted/40 transition-colors disabled:opacity-50"
+            >
+              <Upload className="w-7 h-7 text-muted-foreground" />
+              <span className="text-xs font-medium">Click to upload an image</span>
+              <span className="text-[11px] text-muted-foreground">Preview appears here after upload</span>
+            </button>
           )}
         </div>
 

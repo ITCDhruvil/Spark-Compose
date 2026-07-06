@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { LinkDialog } from './link-dialog'
 import { ImageDialog } from './image-dialog'
@@ -8,9 +8,13 @@ import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { FindReplaceDialog } from './find-replace-dialog'
 import { EmbedDialog } from './embed-dialog'
 import { CommentDialog } from './comment-dialog'
+import { MediaDialog } from './media-dialog'
+import { uploadsApi } from '@/lib/api/ai-client'
 import { readImageFileAsDataUrl } from './editor-image-upload'
+import { OPEN_MEDIA_EVENT } from '@/lib/editor/media-events'
 import type { ImageAlign } from './extensions/resizable-image'
 import type { CalloutType } from './extensions/callout'
+import { setLastCallout } from '@/lib/editor/editor-preferences'
 
 const DEFAULT_AUTHOR = 'You'
 
@@ -22,6 +26,13 @@ export function useEditorDialogs(editor: Editor | null) {
   const [findOpen, setFindOpen] = useState(false)
   const [embedOpen, setEmbedOpen] = useState(false)
   const [commentOpen, setCommentOpen] = useState(false)
+  const [mediaOpen, setMediaOpen] = useState(false)
+
+  useEffect(() => {
+    const onOpenMedia = () => setMediaOpen(true)
+    window.addEventListener(OPEN_MEDIA_EVENT, onOpenMedia)
+    return () => window.removeEventListener(OPEN_MEDIA_EVENT, onOpenMedia)
+  }, [])
 
   const openLinkDialog = useCallback(() => {
     if (!editor) return
@@ -48,6 +59,11 @@ export function useEditorDialogs(editor: Editor | null) {
   const openEmbedDialog = useCallback(() => {
     if (!editor) return
     setEmbedOpen(true)
+  }, [editor])
+
+  const openMediaDialog = useCallback(() => {
+    if (!editor) return
+    setMediaOpen(true)
   }, [editor])
 
   const openCommentDialog = useCallback(() => {
@@ -90,8 +106,11 @@ export function useEditorDialogs(editor: Editor | null) {
         src,
         alt: caption ?? '',
         title: caption ?? '',
+        caption: caption ?? '',
         align: align ?? 'center',
         sizePreset: width ?? '100',
+        width: null,
+        height: null,
       }).run()
       return
     }
@@ -101,6 +120,7 @@ export function useEditorDialogs(editor: Editor | null) {
         src,
         alt: caption ?? '',
         title: caption ?? '',
+        caption: caption ?? '',
         align: align ?? 'center',
         sizePreset: width ?? '100',
       },
@@ -108,7 +128,13 @@ export function useEditorDialogs(editor: Editor | null) {
   }, [editor, imageMode])
 
   const handleImageUpload = useCallback(async (file: File) => {
-    return readImageFileAsDataUrl(file)
+    try {
+      const { url } = await uploadsApi.image(file)
+      return url
+    } catch {
+      // Fallback so insert still works if the upload API is unavailable
+      return readImageFileAsDataUrl(file)
+    }
   }, [])
 
   const handleEmbed = useCallback((url: string) => {
@@ -147,9 +173,10 @@ export function useEditorDialogs(editor: Editor | null) {
         attrs: { type },
         content: [{ type: 'paragraph' }],
       }).run()
-      return
+    } else {
+      editor.chain().focus().setCallout(type).run()
     }
-    editor.chain().focus().setCallout(type).run()
+    setLastCallout(type)
   }, [editor])
 
   const linkInitialUrl = editor?.getAttributes('link').href as string | undefined
@@ -170,7 +197,7 @@ export function useEditorDialogs(editor: Editor | null) {
         onClose={() => setImageOpen(false)}
         mode={imageMode}
         initialUrl={(imageAttrs.src as string) ?? ''}
-        initialCaption={(imageAttrs.alt as string) ?? (imageAttrs.title as string) ?? ''}
+        initialCaption={(imageAttrs.caption as string) ?? (imageAttrs.title as string) ?? (imageAttrs.alt as string) ?? ''}
         initialWidth={(imageAttrs.sizePreset as string) ?? '100'}
         initialAlign={(imageAttrs.align as ImageAlign) ?? 'center'}
         onSubmit={handleImageSubmit}
@@ -179,6 +206,15 @@ export function useEditorDialogs(editor: Editor | null) {
       <KeyboardShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <FindReplaceDialog open={findOpen} onClose={() => setFindOpen(false)} editor={editor} />
       <EmbedDialog open={embedOpen} onClose={() => setEmbedOpen(false)} onSubmit={handleEmbed} />
+      <MediaDialog
+        open={mediaOpen}
+        onClose={() => setMediaOpen(false)}
+        onInsertImage={() => {
+          setImageMode('insert')
+          setImageOpen(true)
+        }}
+        onEmbedVideo={() => setEmbedOpen(true)}
+      />
       <CommentDialog
         open={commentOpen}
         onClose={() => setCommentOpen(false)}
@@ -198,6 +234,7 @@ export function useEditorDialogs(editor: Editor | null) {
     openShortcutsDialog: () => setShortcutsOpen(true),
     openFindReplace,
     openEmbedDialog,
+    openMediaDialog,
     openCommentDialog,
     insertCallout,
   }

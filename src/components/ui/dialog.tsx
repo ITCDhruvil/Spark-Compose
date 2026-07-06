@@ -8,11 +8,12 @@ interface DialogProps {
   open: boolean
   onClose: () => void
   title: string
+  description?: string
   children: React.ReactNode
   className?: string
 }
 
-export function Dialog({ open, onClose, title, children, className }: DialogProps) {
+export function Dialog({ open, onClose, title, description, children, className }: DialogProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -31,14 +32,19 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={cn('relative bg-background border rounded-lg shadow-lg w-full max-w-md mx-4 p-6', className)}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted transition-colors">
+      <div className={cn('relative bg-background border rounded-xl shadow-xl w-full max-w-md mx-4', className)}>
+        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b bg-muted/20">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold leading-tight">{title}</h2>
+            {description && (
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{description}</p>
+            )}
+          </div>
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-muted transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
-        {children}
+        <div className="px-5 py-4">{children}</div>
       </div>
     </div>,
     document.body,

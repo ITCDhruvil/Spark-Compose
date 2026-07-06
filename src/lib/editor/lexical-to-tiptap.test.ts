@@ -1,4 +1,5 @@
 // src/lib/editor/lexical-to-tiptap.test.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import { lexicalToTiptapDoc } from './lexical-to-tiptap'
 import type { LexicalEditorState } from '@/lib/api/ai-types'

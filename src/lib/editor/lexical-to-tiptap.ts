@@ -38,11 +38,19 @@ function convertNode(node: LexicalNode): Record<string, unknown> | null {
       return textNodeToTiptap(node)
 
     case 'paragraph':
-      return { type: 'paragraph', content: convertChildren(node.children) }
+      return {
+        type: 'paragraph',
+        attrs: { textAlign: node.format || 'justify' },
+        content: convertChildren(node.children),
+      }
 
     case 'heading': {
       const level = Number(node.tag.replace('h', ''))
-      return { type: 'heading', attrs: { level: Math.min(level, 4) }, content: convertChildren(node.children) }
+      return {
+        type: 'heading',
+        attrs: { level: Math.min(Math.max(level, 1), 4), textAlign: node.format || null },
+        content: convertChildren(node.children),
+      }
     }
 
     case 'quote':
@@ -77,15 +85,31 @@ function convertNode(node: LexicalNode): Record<string, unknown> | null {
       return { type: 'tableRow', content: convertChildren(node.children) }
 
     case 'tablecell': {
-      const content = convertChildren(node.children)
-      const wrapped = content.length > 0 && content[0].type === 'paragraph' ? content : [{ type: 'paragraph', content }]
+      const content = convertChildren(node.children).map((child) => {
+        // Never justify text inside tables
+        if (child.type === 'paragraph') {
+          return {
+            ...child,
+            attrs: { ...(child.attrs as object | undefined), textAlign: 'left' },
+          }
+        }
+        return child
+      })
+      const wrapped = content.length > 0 && content[0].type === 'paragraph' ? content : [{ type: 'paragraph', attrs: { textAlign: 'left' }, content }]
       return { type: node.headerState ? 'tableHeader' : 'tableCell', content: wrapped }
     }
 
     case 'image':
       return {
         type: 'image',
-        attrs: { src: node.src, alt: node.alt, align: node.alignment, sizePreset: '100' },
+        attrs: {
+          src: node.src,
+          alt: node.alt || 'Image',
+          title: node.alt || null,
+          caption: node.alt || '',
+          align: node.alignment || 'center',
+          sizePreset: '100',
+        },
       }
 
     default:

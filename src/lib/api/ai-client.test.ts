@@ -38,7 +38,8 @@ describe('streamSSE', () => {
   it('throws APIError on non-2xx response', async () => {
     global.fetch = vi.fn().mockResolvedValue(new Response('bad request', { status: 400 }))
     await expect(async () => {
-      for await (const _ of streamSSE('/ai/complete', {}, new AbortController().signal)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- drain stream
+      for await (const _chunk of streamSSE('/ai/complete', {}, new AbortController().signal)) {
         // drain
       }
     }).rejects.toThrow(APIError)
@@ -47,7 +48,8 @@ describe('streamSSE', () => {
   it('throws NetworkError when fetch rejects', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('DNS failure'))
     await expect(async () => {
-      for await (const _ of streamSSE('/ai/complete', {}, new AbortController().signal)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- drain stream
+      for await (const _chunk of streamSSE('/ai/complete', {}, new AbortController().signal)) {
         // drain
       }
     }).rejects.toThrow(NetworkError)
