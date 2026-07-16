@@ -28,8 +28,13 @@ import { EditorToolbar } from './editor-toolbar'
 import { TableMenu } from './table-menu'
 import { ImageMenu } from './image-menu'
 import { AiSelectionMenu } from './ai/ai-selection-menu'
-import { AiAskFlowCard } from './ai/ai-ask-flow-card'
+import { SelectionFormatMenu } from './ai/selection-format-bar'
+import { AiConversationalDraftCard } from './ai/ai-conversational-draft-card'
+import { AiDraftEnhancePanel } from './ai/ai-draft-enhance-panel'
+import { AiGuidedDraftPanel } from './ai/ai-guided-draft-panel'
 import { OPEN_DRAFT_ANYTHING_EVENT } from '@/lib/editor/draft-anything-events'
+import { resolveAiEnabled, type RichEditorAiConfig } from '@/lib/editor/ai-capabilities'
+import { EditorAiProvider } from '@/lib/editor/editor-ai-context'
 import { EditorDragHandle } from './editor-drag-handle'
 import { TocSidebar } from './toc-sidebar'
 import { HeadingWithId } from './extensions/heading-id'
@@ -72,6 +77,12 @@ export interface RichEditorProps {
   editable?: boolean
   showToc?: boolean
   minHeight?: string
+  /**
+   * Spark AI (LLM) plugin toggle. When false, Ask/Draft/Improve/autocomplete/grammar AI
+   * are removed; smart features (slash structure, paste, Spark Chart, local spelling) stay.
+   * Default: enabled.
+   */
+  ai?: RichEditorAiConfig
 }
 
 export function RichEditor({
@@ -82,7 +93,9 @@ export function RichEditor({
   editable = true,
   showToc = true,
   minHeight = '320px',
+  ai,
 }: RichEditorProps) {
+  const aiEnabled = resolveAiEnabled(ai)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [focusMode, setFocusMode] = useState(false)
   const [spellCheck, setSpellCheck] = useState(true)
@@ -92,61 +105,70 @@ export function RichEditor({
   const initialContent = useRef(parseContent(content))
 
   useEffect(() => {
+    if (!aiEnabled) return
     const openDraft = () => setDraftOpen(true)
     window.addEventListener(OPEN_DRAFT_ANYTHING_EVENT, openDraft)
     return () => window.removeEventListener(OPEN_DRAFT_ANYTHING_EVENT, openDraft)
-  }, [])
+  }, [aiEnabled])
 
-  const extensions = useMemo(() => [
-    StarterKit.configure({
-      heading: false,
-      codeBlock: false,
-      link: false,
-    }),
-    HeadingWithId,
-    TocBlock,
-    CodeBlockLowlight.configure({ lowlight }),
-    Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
-    Highlight.configure({ multicolor: true }),
-    ResizableImage,
-    FontFamily,
-    FontSize,
-    Callout,
-    VideoEmbed,
-    ChartBlock,
-    KpiRow,
-    EditorComment,
-    ListStyleExtension,
-    BlockIndent,
-    Table.configure({ resizable: true, allowTableNodeSelection: true }),
-    TableRow,
-    TableHeader,
-    TableCell,
-    TaskList,
-    TaskItem.configure({ nested: true }),
-    Placeholder.configure({ placeholder, includeChildren: true }),
-    CharacterCount,
-    Color,
-    TextStyle,
-    Subscript,
-    Superscript,
-    Typography,
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    Underline,
-    AiLoadingMark,
-    AskPrompt,
-    AskAnswer,
-    AiIssues,
-    SlashCommands,
-    MarkdownShortcuts,
-    BlockShortcuts,
-    SmartPaste,
-    AiAutocomplete.configure({
-      enabled: () => useAiStore.getState().autocompleteEnabled,
-      scope: () => useAiStore.getState().autocompleteScope,
-    }),
-    AiGrammarCheck,
-  ], [placeholder])
+  const extensions = useMemo(() => {
+    const base = [
+      StarterKit.configure({
+        heading: false,
+        codeBlock: false,
+        link: false,
+      }),
+      HeadingWithId,
+      TocBlock,
+      CodeBlockLowlight.configure({ lowlight }),
+      Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
+      Highlight.configure({ multicolor: true }),
+      ResizableImage,
+      FontFamily,
+      FontSize,
+      Callout,
+      VideoEmbed,
+      ChartBlock,
+      KpiRow,
+      EditorComment,
+      ListStyleExtension,
+      BlockIndent,
+      Table.configure({ resizable: true, allowTableNodeSelection: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Placeholder.configure({ placeholder, includeChildren: true }),
+      CharacterCount,
+      Color,
+      TextStyle,
+      Subscript,
+      Superscript,
+      Typography,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Underline,
+      SlashCommands.configure({ aiEnabled }),
+      MarkdownShortcuts,
+      BlockShortcuts,
+      SmartPaste,
+    ]
+
+    if (!aiEnabled) return base
+
+    return [
+      ...base,
+      AiLoadingMark,
+      AskPrompt,
+      AskAnswer,
+      AiIssues,
+      AiAutocomplete.configure({
+        enabled: () => useAiStore.getState().autocompleteEnabled,
+        scope: () => useAiStore.getState().autocompleteScope,
+      }),
+      AiGrammarCheck,
+    ]
+  }, [placeholder, aiEnabled])
 
   const editorProps = useMemo(() => ({
     attributes: {
@@ -174,7 +196,7 @@ export function RichEditor({
   })
 
   useAiSpellcheck(editor)
-  const grammarPopup = useAiGrammarCheck(editor)
+  const grammarPopup = useAiGrammarCheck(aiEnabled ? editor : null)
 
   const {
     dialogs,
@@ -271,6 +293,7 @@ export function RichEditor({
         <div className="relative z-30 shrink-0">
           <EditorToolbar
             editor={editor}
+            aiEnabled={aiEnabled}
             onLinkClick={openLinkDialog}
             onImageClick={openImageDialog}
             onShortcutsClick={openShortcutsDialog}
@@ -302,6 +325,8 @@ export function RichEditor({
             <EmptyLineHint editor={editor} />
             <TableMenu editor={editor} />
             <ImageMenu editor={editor} onEdit={openImageEditDialog} />
+            {editable && aiEnabled && <AiGuidedDraftPanel editor={editor} />}
+            {editable && aiEnabled && <AiDraftEnhancePanel editor={editor} />}
             <EditorContent
               editor={editor}
               className="focus:outline-none w-full flex-1 editor-content-area"
@@ -310,7 +335,9 @@ export function RichEditor({
         </div>
       </div>
 
-      {editable && <AiSelectionMenu editor={editor} />}
+      {editable && (aiEnabled
+        ? <AiSelectionMenu editor={editor} />
+        : <SelectionFormatMenu editor={editor} />)}
 
       {editable && (
         <div className="editor-statusbar flex shrink-0 items-center justify-between gap-4 px-4 py-1.5 text-sm text-muted-foreground">
@@ -324,6 +351,7 @@ export function RichEditor({
   )
 
   return (
+    <EditorAiProvider aiEnabled={aiEnabled}>
     <div className={shellClass}>
       <div
         className={`w-full ${
@@ -339,20 +367,21 @@ export function RichEditor({
           {editorColumn}
         </div>
       </div>
-      {editable && (
-        <AiAskFlowCard
+      {editable && aiEnabled && (
+        <AiConversationalDraftCard
           open={draftOpen}
           onClose={() => setDraftOpen(false)}
           editor={editor}
         />
       )}
       {dialogs}
-      {grammarPopup}
+      {aiEnabled && grammarPopup}
       {editable && (
         <CommandPalette
           open={paletteOpen}
           onClose={() => setPaletteOpen(false)}
           editor={editor}
+          aiEnabled={aiEnabled}
           actions={{
             openLinkDialog,
             openFindReplace,
@@ -367,6 +396,7 @@ export function RichEditor({
       )}
       {editable && <TocTemplateModal editor={editor} />}
     </div>
+    </EditorAiProvider>
   )
 }
 

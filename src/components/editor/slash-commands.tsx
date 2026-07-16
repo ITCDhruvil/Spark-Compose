@@ -4,26 +4,37 @@ import { Extension } from '@tiptap/core'
 import Suggestion, { type SuggestionProps } from '@tiptap/suggestion'
 import { ReactRenderer } from '@tiptap/react'
 import tippy, { type Instance as TippyInstance, type PopperElement, sticky } from 'tippy.js'
-import { SLASH_COMMANDS, resolveSlashCommandSections, runSlashCommand, type CommandItem } from './slash-command-items'
+import { getSlashCommands, resolveSlashCommandSections, runSlashCommand, type CommandItem } from './slash-command-items'
 import { CommandList, type CommandListRef } from './slash-command-list'
 import type { SlashCommandSection } from '@/lib/editor/slash-suggestions'
 
-export const SlashCommands = Extension.create({
+export interface SlashCommandsOptions {
+  aiEnabled: boolean
+}
+
+export const SlashCommands = Extension.create<SlashCommandsOptions>({
   name: 'slashCommands',
 
+  addOptions() {
+    return {
+      aiEnabled: true,
+    }
+  },
+
   addProseMirrorPlugins() {
+    const aiEnabled = this.options.aiEnabled
     return [
       Suggestion<SlashCommandSection, CommandItem>({
         editor: this.editor,
         char: '/',
         allowSpaces: true,
-        initialItems: [{ label: '', items: SLASH_COMMANDS }],
+        initialItems: [{ label: '', items: getSlashCommands(aiEnabled) }],
         allowedPrefixes: null,
         command: ({ editor, range, props }) => {
           editor.chain().focus().deleteRange(range).run()
           runSlashCommand(props, editor)
         },
-        items: ({ query, editor }) => resolveSlashCommandSections(query, editor),
+        items: ({ query, editor }) => resolveSlashCommandSections(query, editor, aiEnabled),
         render: () => {
           let component: ReactRenderer<CommandListRef> | null = null
           let popup: TippyInstance | null = null

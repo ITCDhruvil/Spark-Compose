@@ -22,6 +22,7 @@ import { AiDropdown } from './ai/ai-dropdown'
 
 interface EditorMoreMenuProps {
   editor: Editor
+  aiEnabled?: boolean
   overflowSegments: ToolbarSegmentId[]
   focusMode: boolean
   spellCheck: boolean
@@ -65,6 +66,7 @@ const ALIGN_OPTIONS = [
 function OverflowItems({
   editor,
   segments,
+  aiEnabled,
   close,
   onFindReplace,
   onAddComment,
@@ -80,6 +82,7 @@ function OverflowItems({
 }: {
   editor: Editor
   segments: Set<ToolbarSegmentId>
+  aiEnabled: boolean
   close: () => void
   onFindReplace: () => void
   onAddComment: () => void
@@ -102,7 +105,7 @@ function OverflowItems({
 
   return (
     <>
-      {has('ai') && (
+      {aiEnabled && has('ai') && (
         <>
           <div className="px-3 py-1.5">
             <AiDropdown editor={editor} />
@@ -338,6 +341,7 @@ function OverflowItems({
 
 export function EditorMoreMenu({
   editor,
+  aiEnabled = true,
   overflowSegments,
   focusMode,
   spellCheck,
@@ -372,6 +376,7 @@ export function EditorMoreMenu({
       <ToolbarPopover open={open} anchorRef={anchorRef} onClose={() => setOpen(false)} align="end" className="py-1 min-w-[220px]">
         <OverflowItems
           editor={editor}
+          aiEnabled={aiEnabled}
           segments={segmentSet}
           close={close}
           onFindReplace={onFindReplace}

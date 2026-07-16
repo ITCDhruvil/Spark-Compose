@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/react'
 import type { CommandItem } from '@/components/editor/slash-command-items'
-import { getCommandByKey, SLASH_COMMANDS } from '@/components/editor/slash-command-items'
+import { getCommandByKey, getSlashCommands } from '@/components/editor/slash-command-items'
+import { isAiSlashKey } from './ai-capabilities'
 import { getRecentSlashKeys } from './editor-preferences'
 
 export interface SlashCommandSection {
@@ -16,6 +17,11 @@ function dedupeItems(items: CommandItem[]): CommandItem[] {
     seen.add(id)
     return true
   })
+}
+
+function allowCommand(item: CommandItem, aiEnabled: boolean): boolean {
+  if (aiEnabled) return true
+  return !isAiSlashKey(item.key)
 }
 
 /** Contextual slash menu suggestions based on cursor line text. */
@@ -52,24 +58,28 @@ export function getSuggestedSlashCommands(editor: Editor): CommandItem[] {
   return dedupeItems(suggestions)
 }
 
-export function getRecentSlashCommands(): CommandItem[] {
+export function getRecentSlashCommands(aiEnabled = true): CommandItem[] {
   return getRecentSlashKeys()
     .map((key) => getCommandByKey(key))
-    .filter((item): item is CommandItem => !!item)
+    .filter((item): item is CommandItem => !!item && allowCommand(item, aiEnabled))
 }
 
 export function buildSlashSections(
   filtered: CommandItem[],
   editor: Editor | null,
   query: string,
+  aiEnabled = true,
 ): SlashCommandSection[] {
   const q = query.trim()
   if (q) {
     return filtered.length ? [{ label: '', items: filtered }] : []
   }
 
-  const recent = getRecentSlashCommands()
-  const suggested = editor ? getSuggestedSlashCommands(editor) : []
+  const catalog = getSlashCommands(aiEnabled)
+  const recent = getRecentSlashCommands(aiEnabled)
+  const suggested = editor
+    ? getSuggestedSlashCommands(editor).filter((item) => allowCommand(item, aiEnabled))
+    : []
   const used = new Set<string>()
   const sections: SlashCommandSection[] = []
 
@@ -91,7 +101,7 @@ export function buildSlashSections(
     sections.push({ label: 'Suggested', items: suggestedFiltered })
   }
 
-  const rest = mark(filtered.length ? filtered : SLASH_COMMANDS)
+  const rest = mark(filtered.length ? filtered : catalog)
   sections.push({ label: sections.length ? 'All commands' : '', items: rest })
 
   return sections

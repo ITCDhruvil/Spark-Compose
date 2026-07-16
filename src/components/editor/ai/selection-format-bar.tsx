@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Editor } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import {
   Bold, Italic, Underline, Strikethrough, Code,
   List, ListOrdered, CheckSquare, Link2, Highlighter,
@@ -187,5 +188,63 @@ export function SelectionFormatBar({ editor }: { editor: Editor }) {
         <Megaphone className="w-4 h-4" />
       </FormatBtn>
     </div>
+  )
+}
+
+function shouldShowSelectionFormat({ editor: ed }: { editor: Editor }) {
+  if (ed.isActive('image')) return false
+  if (ed.isActive('chartBlock')) return false
+  if (!ed.isFocused) return false
+  const { empty, from, to } = ed.state.selection
+  if (empty) return false
+  if (ed.isActive('codeBlock')) return false
+  const text = ed.state.doc.textBetween(from, to, '\n')
+  return text.trim().length > 0
+}
+
+/** Selection bubble with formatting only — used when Spark AI is disabled. */
+export function SelectionFormatMenu({ editor }: { editor: Editor }) {
+  const shouldShow = useCallback(
+    ({ editor: ed }: { editor: Editor }) => shouldShowSelectionFormat({ editor: ed }),
+    [],
+  )
+
+  const bubbleOptions = useMemo(() => {
+    const el =
+      typeof document !== 'undefined'
+        ? document.querySelector('[data-editor-scroll]')
+        : null
+    const scrollTarget: HTMLElement | Window =
+      el instanceof HTMLElement ? el : window
+
+    return {
+      strategy: 'fixed' as const,
+      placement: 'top-start' as const,
+      offset: 8,
+      flip: true,
+      shift: { padding: 8 },
+      scrollTarget,
+    }
+  }, [])
+
+  const appendToBody = useCallback(() => document.body, [])
+
+  return (
+    <BubbleMenu
+      editor={editor}
+      pluginKey="selectionFormatMenu"
+      shouldShow={shouldShow}
+      appendTo={appendToBody}
+      updateDelay={0}
+      options={bubbleOptions}
+      className="pointer-events-auto z-[10050]"
+    >
+      <div
+        className="w-max max-w-[95vw] rounded-xl border border-border bg-popover shadow-xl overflow-hidden"
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        <SelectionFormatBar editor={editor} />
+      </div>
+    </BubbleMenu>
   )
 }

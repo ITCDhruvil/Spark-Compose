@@ -16,6 +16,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { aiApi } from '@/lib/api/ai-client'
+import { useEditorAiEnabled } from '@/lib/editor/editor-ai-context'
 import {
   getSelectedImagePos,
   renumberFigureCaptions,
@@ -112,6 +113,7 @@ function getSizePercent(editor: Editor): number {
 }
 
 export function ImageMenu({ editor, onEdit }: ImageMenuProps) {
+  const aiEnabled = useEditorAiEnabled()
   const [busy, setBusy] = useState<'caption' | 'alt' | null>(null)
   const [attrs, setAttrs] = useState<ImageMenuAttrs>(() => readImageAttrs(editor))
   const [sizePct, setSizePct] = useState(() => getSizePercent(editor))
@@ -294,32 +296,36 @@ export function ImageMenu({ editor, onEdit }: ImageMenuProps) {
 
       <Divider />
 
-      <button
-        type="button"
-        title="AI Caption — writes a Figure N: line under the image for reports and documents"
-        disabled={busy !== null}
-        onMouseDown={(e) => { e.preventDefault(); void runImageMeta('caption') }}
-        className="h-7 px-1.5 inline-flex items-center gap-1 text-[10px] font-medium rounded shrink-0 hover:bg-muted disabled:opacity-40 text-foreground"
-      >
-        {busy === 'caption'
-          ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
-          : <Captions className="w-3 h-3 text-primary" />}
-        <span>AI Caption</span>
-      </button>
-      <button
-        type="button"
-        title="AI Alt text — short description for screen readers and accessibility. Saved on the image’s alt attribute so assistive tech can describe it; not a visible figure caption."
-        disabled={busy !== null}
-        onMouseDown={(e) => { e.preventDefault(); void runImageMeta('alt') }}
-        className="h-7 px-1.5 inline-flex items-center gap-1 text-[10px] font-medium rounded shrink-0 hover:bg-muted disabled:opacity-40 text-foreground"
-      >
-        {busy === 'alt'
-          ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
-          : <Accessibility className="w-3 h-3 text-primary" />}
-        <span>AI Alt text</span>
-      </button>
+      {aiEnabled && (
+        <>
+          <button
+            type="button"
+            title="AI Caption — writes a Figure N: line under the image for reports and documents"
+            disabled={busy !== null}
+            onMouseDown={(e) => { e.preventDefault(); void runImageMeta('caption') }}
+            className="h-7 px-1.5 inline-flex items-center gap-1 text-[10px] font-medium rounded shrink-0 hover:bg-muted disabled:opacity-40 text-foreground"
+          >
+            {busy === 'caption'
+              ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
+              : <Captions className="w-3 h-3 text-primary" />}
+            <span>AI Caption</span>
+          </button>
+          <button
+            type="button"
+            title="AI Alt text — short description for screen readers and accessibility. Saved on the image’s alt attribute so assistive tech can describe it; not a visible figure caption."
+            disabled={busy !== null}
+            onMouseDown={(e) => { e.preventDefault(); void runImageMeta('alt') }}
+            className="h-7 px-1.5 inline-flex items-center gap-1 text-[10px] font-medium rounded shrink-0 hover:bg-muted disabled:opacity-40 text-foreground"
+          >
+            {busy === 'alt'
+              ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
+              : <Accessibility className="w-3 h-3 text-primary" />}
+            <span>AI Alt text</span>
+          </button>
 
-      <Divider />
+          <Divider />
+        </>
+      )}
 
       <MenuBtn onClick={onEdit} title="Edit image">
         <Pencil className="w-3.5 h-3.5" />

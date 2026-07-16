@@ -6,7 +6,7 @@ import {
   Info, AlertTriangle, AlertCircle, CheckCircle2, Video, Sparkles, ImageIcon, Columns3,
 } from 'lucide-react'
 import type { CalloutType } from './extensions/callout'
-import { openDraftAnything } from '@/lib/editor/draft-anything-events'
+import { openDraftAnything, openDraftEnhance } from '@/lib/editor/draft-anything-events'
 import { openMediaModal } from '@/lib/editor/media-events'
 import { convertToBulletList, convertToOrderedList } from './editor-list-utils'
 import {
@@ -20,6 +20,7 @@ import {
   setLastTable,
 } from '@/lib/editor/editor-preferences'
 import { buildSlashSections, type SlashCommandSection } from '@/lib/editor/slash-suggestions'
+import { isAiSlashKey } from '@/lib/editor/ai-capabilities'
 
 export interface CommandItem {
   title: string
@@ -156,7 +157,7 @@ export const SLASH_COMMANDS: CommandItem[] = [
     key: 'ask',
     recordKey: 'ask',
     title: 'Ask',
-    description: 'Tagged /ask block — type a question, then Ask or Improve',
+    description: 'Ask a construction expert — learn the WHY, not just a quick dump',
     icon: <Sparkles className="w-4 h-4" />,
     command: (e) => e.chain().focus().insertAskPrompt().run(),
   },
@@ -167,6 +168,14 @@ export const SLASH_COMMANDS: CommandItem[] = [
     description: 'Pick a type, answer a few questions, get a draft',
     icon: <Sparkles className="w-4 h-4" />,
     command: () => openDraftAnything(),
+  },
+  {
+    key: 'draft-coach',
+    recordKey: 'draft-coach',
+    title: 'Draft coach',
+    description: 'Full-width tips: asked vs drafted, trends, improvements',
+    icon: <Sparkles className="w-4 h-4" />,
+    command: () => openDraftEnhance(),
   },
   {
     key: 'media',
@@ -307,6 +316,12 @@ export function getCommandByKey(key: string): CommandItem | undefined {
   return COMMAND_BY_KEY.get(key)
 }
 
+/** Static slash items, optionally excluding LLM-backed Spark AI commands. */
+export function getSlashCommands(aiEnabled = true): CommandItem[] {
+  if (aiEnabled) return SLASH_COMMANDS
+  return SLASH_COMMANDS.filter((item) => !isAiSlashKey(item.key))
+}
+
 export function runSlashCommand(item: CommandItem, editor: Editor) {
   item.command(editor)
   const rk = item.recordKey ?? item.key
@@ -341,10 +356,11 @@ function shouldHideStatic(item: CommandItem, parsed: ParsedSlashCommand): boolea
   }
 }
 
-function resolveFilteredCommands(query: string): CommandItem[] {
+function resolveFilteredCommands(query: string, aiEnabled = true): CommandItem[] {
   const q = query.trim()
   const parsed = parseSlashQuery(q)
   const dynamic: CommandItem[] = []
+  const catalog = getSlashCommands(aiEnabled)
 
   if (parsed) {
     dynamic.push(commandFromParsed(parsed))
@@ -352,21 +368,25 @@ function resolveFilteredCommands(query: string): CommandItem[] {
     dynamic.push(lastTableCommandItem())
   }
 
-  const staticItems = SLASH_COMMANDS.filter((item) => {
+  const staticItems = catalog.filter((item) => {
     if (parsed && shouldHideStatic(item, parsed)) return false
     if (q.toLowerCase() === 'table' && item.key === 'table') return false
     return staticMatchesQuery(item, q)
   })
 
   if (dynamic.length) return [...dynamic, ...staticItems]
-  if (!q) return SLASH_COMMANDS
+  if (!q) return catalog
   return staticItems
 }
 
 /** Resolve slash menu sections (recent, suggested, filtered). */
-export function resolveSlashCommandSections(query: string, editor: Editor | null): SlashCommandSection[] {
-  const filtered = resolveFilteredCommands(query)
-  return buildSlashSections(filtered, editor, query)
+export function resolveSlashCommandSections(
+  query: string,
+  editor: Editor | null,
+  aiEnabled = true,
+): SlashCommandSection[] {
+  const filtered = resolveFilteredCommands(query, aiEnabled)
+  return buildSlashSections(filtered, editor, query, aiEnabled)
 }
 
 /** Flat list for backwards compatibility. */

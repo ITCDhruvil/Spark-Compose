@@ -10,7 +10,7 @@ import {
 import { Dialog } from '@/components/ui/dialog'
 import type { CalloutType } from './extensions/callout'
 import { insertLastTable } from './slash-command-items'
-import { runSlashCommand, SLASH_COMMANDS } from './slash-command-items'
+import { runSlashCommand, getSlashCommands } from './slash-command-items'
 import {
   deleteCurrentBlock,
   duplicateCurrentBlock,
@@ -60,8 +60,8 @@ function scoreMatch(query: string, cmd: PaletteCommand): number {
   return 0
 }
 
-export function buildPaletteCommands(): PaletteCommand[] {
-  const slashItems: PaletteCommand[] = SLASH_COMMANDS.map((item) => {
+export function buildPaletteCommands(aiEnabled = true): PaletteCommand[] {
+  const slashItems: PaletteCommand[] = getSlashCommands(aiEnabled).map((item) => {
     const key = item.key ?? item.title
     return {
       id: `slash-${key}`,
@@ -200,13 +200,14 @@ interface CommandPaletteProps {
   onClose: () => void
   editor: Editor
   actions: CommandPaletteActions
+  aiEnabled?: boolean
 }
 
-export function CommandPalette({ open, onClose, editor, actions }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, editor, actions, aiEnabled = true }: CommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
-  const allCommands = useMemo(() => buildPaletteCommands(), [])
+  const allCommands = useMemo(() => buildPaletteCommands(aiEnabled), [aiEnabled])
 
   const filtered = useMemo(() => {
     const scored = allCommands

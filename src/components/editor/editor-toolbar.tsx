@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import {
   Undo2, Redo2, Bold, Italic, Underline, Strikethrough, Code, Highlighter, RemoveFormatting,
@@ -40,6 +40,7 @@ import { labelFromFontSizeAttr } from '@/lib/editor/font-size-utils'
 
 interface EditorToolbarProps {
   editor: Editor
+  aiEnabled?: boolean
   onLinkClick: () => void
   onImageClick: () => void
   onShortcutsClick: () => void
@@ -172,7 +173,7 @@ function RibbonDropdownBtn({
 }
 
 export function EditorToolbar({
-  editor, onLinkClick, onImageClick, onShortcutsClick,
+  editor, aiEnabled = true, onLinkClick, onImageClick, onShortcutsClick,
   focusMode, spellCheck, onToggleFocusMode, onToggleSpellCheck,
   onFindReplace, onAddComment, onEmbedVideo, onInsertCallout,
 }: EditorToolbarProps) {
@@ -194,6 +195,11 @@ export function EditorToolbar({
   const [exportStatus, setExportStatus] = useState('')
   const [, setToolbarTick] = useState(0)
 
+  const segmentOrder = useMemo(
+    () => (aiEnabled ? TOOLBAR_SEGMENT_ORDER : TOOLBAR_SEGMENT_ORDER.filter((id) => id !== 'ai')),
+    [aiEnabled],
+  )
+
   useEffect(() => {
     const refresh = () => setToolbarTick((n) => n + 1)
     editor.on('selectionUpdate', refresh)
@@ -204,7 +210,7 @@ export function EditorToolbar({
     }
   }, [editor])
 
-  const { containerRef, measureRef, visibleCount, hasOverflow } = useToolbarOverflow(TOOLBAR_SEGMENT_ORDER.length)
+  const { containerRef, measureRef, visibleCount, hasOverflow } = useToolbarOverflow(segmentOrder.length)
   const openTocTemplateModal = useTocStore((s) => s.openTemplateModal)
 
   const currentHeading = HEADING_STYLE_OPTIONS.find((h) =>
@@ -313,7 +319,7 @@ export function EditorToolbar({
         <Divider />
       </SegmentWrap>
     ),
-    ai: (
+    ai: aiEnabled ? (
       <SegmentWrap>
         <AiDropdown
           editor={editor}
@@ -322,7 +328,7 @@ export function EditorToolbar({
         />
         <Divider />
       </SegmentWrap>
-    ),
+    ) : null,
     format: (
       <SegmentWrap>
         <ToolGroup className="pl-1.5">
@@ -650,11 +656,11 @@ export function EditorToolbar({
     ),
   }
 
-  const segmentNodes = TOOLBAR_SEGMENT_ORDER.map((id) => (
+  const segmentNodes = segmentOrder.map((id) => (
     <div key={id}>{segments[id]}</div>
   ))
 
-  const overflowSegments = TOOLBAR_SEGMENT_ORDER.slice(visibleCount)
+  const overflowSegments = segmentOrder.slice(visibleCount)
 
   return (
     <div ref={containerRef} className="relative bg-[#f3f3f3] dark:bg-muted/30 flex items-center gap-1 px-4 py-3.5 overflow-hidden w-full">
@@ -673,6 +679,7 @@ export function EditorToolbar({
       {hasOverflow && (
         <EditorMoreMenu
           editor={editor}
+          aiEnabled={aiEnabled}
           overflowSegments={overflowSegments}
           focusMode={focusMode}
           spellCheck={spellCheck}
