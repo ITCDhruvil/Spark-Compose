@@ -1,5 +1,10 @@
 # Embedding the rich editor (mobile & hosts)
 
+> **Full guide for the mobile developer:** [docs/integration/mobile-integration.md](docs/integration/mobile-integration.md)  
+> Also see: [docs/integration/README.md](docs/integration/README.md) · [docs/integration/ai-toggle.md](docs/integration/ai-toggle.md)
+
+**Repo:** https://github.com/ITCDhruvil/Spark-Compose.git
+
 This repo is a Next.js TipTap editor with two layers:
 
 | Layer | Examples | Needs OpenAI? |

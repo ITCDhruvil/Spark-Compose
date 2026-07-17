@@ -7,6 +7,7 @@ Welcome to the documentation for **Spark Compose** — a construction-focused ri
 | Audience | Start here |
 |----------|------------|
 | **New developers** | [Getting started](./getting-started/prerequisites.md) |
+| **Mobile / embedding developers** | [Integration & embedding](./integration/README.md) |
 | **Product / PM** | [Introduction](./introduction/overview.md) |
 | **End users** | [Smart features](./features/smart-features/README.md) and [AI features](./features/ai-features/README.md) |
 
@@ -43,6 +44,15 @@ Writing assistance, analytics, and construction-aware intelligence.
 
 - [AI features index](./features/ai-features/README.md)
 
+### Integration & embedding
+How to embed the editor in another app (including mobile WebView) and how to turn Spark AI off.
+
+- [Integration index](./integration/README.md)
+- [Mobile integration guide](./integration/mobile-integration.md)
+- [The `ai` toggle](./integration/ai-toggle.md)
+
 ## Related material
 
 Older design notes live under `docs/superpowers/` (internal planning). This `docs/` tree is the main product documentation.
+
+Quick handoff note at repo root: [`EMBEDDING.md`](../EMBEDDING.md).
