@@ -2,24 +2,29 @@
 
 ## What it is
 
-**Generate new document content** from a brief — topic, audience, tone, and construction context — via the **Draft Anything** / construction draft flow.
+**Conversational interview → guided writing in the editor.** After Q&A, the AI proposes a **real-time outline** from your story (not a fixed template). You write section by section; the assistant guides and can optionally polish a finished section.
 
 ## Problem it solves
 
-Starting from a blank page for method statements, emails, or site updates is slow. Users describe what they need and insert a draft to edit.
+One-shot “generate whole article” loses the author’s voice. Guided draft keeps learning + writing together.
 
 ## How to use
 
-1. **Selection menu → Draft**, or slash **`/draft`**, or Draft card from toolbar flows.
-2. Fill in:
-   - What to write about
-   - Audience / document type (where shown)
-   - Optional constraints
-3. **Generate** → review → **Insert** into editor.
+1. Slash **`/draft`** — pick a type and talk through the story (chips or free text).
+2. When ready, review the **summary table** + **editable outline** (add/remove sections; pick impact suggestions).
+3. **Start writing together** → editor opens guided mode:
+   - Title: Confirm / Suggest another / Custom
+   - Each section: what to write + how to write (you write in your tone)
+   - Optional **Improve section** or skip to the next
+4. Later, **`/draft-coach`** can still suggest knowledge enhancements on the full doc.
+
+## Architecture
+
+- Interview: `POST /api/ai/ask-draft` (tools + playbook WHYs + live `outline`)
+- Guided writing: `POST /api/ai/draft-guide` (`proposeOutline`, `suggestTitles`, `sectionGuide`, `improveSection`)
+- UI: conversational dialog → [`ai-guided-draft-panel.tsx`](../../../src/components/editor/ai/ai-guided-draft-panel.tsx)
 
 ## Notes
 
-- API: `/api/ai/construction-draft`, `/api/ai/ask-draft`
-- UI: `ai-draft-anything-card.tsx`, `ai-ask-flow-card.tsx`
-- Marked **New** in Spark AI catalog.
-- Always review for site-specific accuracy before issuing formally.
+- No full `construction-draft` dump in the default path anymore.
+- Always review for site-specific accuracy.

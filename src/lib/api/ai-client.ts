@@ -10,6 +10,8 @@ import type {
   ConstructionDraftRequest, ConstructionDraftResponse, RagIngestResponse,
   CompareSummaryRequest, CompareSummaryResponse,
   AskDraftRequest, AskDraftResponse,
+  DraftEnhanceRequest, DraftEnhanceResponse,
+  DraftGuideRequest, DraftGuideResponse,
 } from './ai-types'
 
 const BASE = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/$/, '')
@@ -278,6 +280,12 @@ export const aiApi = {
   },
   askDraft(req: AskDraftRequest): Promise<AskDraftResponse> {
     return postJson('/api/ai/ask-draft', req, 'draft', undefined, 120_000)
+  },
+  draftEnhance(req: DraftEnhanceRequest, signal?: AbortSignal): Promise<DraftEnhanceResponse> {
+    return postJson('/api/ai/draft-enhance', req, 'draft', signal, 60_000)
+  },
+  draftGuide(req: DraftGuideRequest, signal?: AbortSignal): Promise<DraftGuideResponse> {
+    return postJson('/api/ai/draft-guide', req, 'draft', signal, 60_000)
   },
   glossary(req: GlossaryRequest): Promise<GlossaryResponse> {
     return postJson('/api/ai/glossary', req, 'glossary')

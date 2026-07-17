@@ -115,3 +115,65 @@ describe('csv paste', () => {
     expect(html).toContain('<td>Electrical</td>')
   })
 })
+
+describe('plain unformatted word paste', () => {
+  const SIMPLE = `This is title
+Some paragraph with more detail about the project.
+- First bullet point
+- Second bullet point`
+
+  it('detects title, paragraph, and bullets from plain text', () => {
+    const html = structuredTextToHtml(SIMPLE)
+    expect(html).toContain('<h1>This is title</h1>')
+    expect(html).toContain('<p>Some paragraph with more detail about the project.</p>')
+    expect(html).toContain('<ul>')
+    expect(html).toContain('<li>First bullet point</li>')
+    expect(html).toContain('<li>Second bullet point</li>')
+  })
+
+  it('structures Word HTML that only has paragraph tags', () => {
+    const wordHtml = `<html><body>
+<p class=MsoNormal>This is title</p>
+<p class=MsoNormal>Some paragraph with more detail about the project.</p>
+<p class=MsoNormal>- First bullet point</p>
+<p class=MsoNormal>- Second bullet point</p>
+</body></html>`
+    const html = convertPastedContent('', wordHtml)
+    expect(html).toContain('<h1>This is title</h1>')
+    expect(html).toContain('<ul>')
+    expect(html).toContain('<li>First bullet point</li>')
+  })
+
+  it('structures Word bold title and inline bullets in HTML paste', async () => {
+    const wordHtml = `<p><b>This is title</b></p>
+<p>This is paragraph, repeated text.</p>
+<p>This is sub title</p>
+<p>this is bullet point 1 this is bullet point 2 this is bullet point 3</p>`
+    const plain = `This is title\nThis is paragraph, repeated text.\nThis is sub title\nthis is bullet point 1 this is bullet point 2 this is bullet point 3`
+    const { convertPastedContent } = await import('@/components/editor/smart-paste')
+    const html = convertPastedContent(plain, wordHtml)
+    expect(html).toContain('<h1>This is title</h1>')
+    expect(html).toContain('<h3>This is sub title</h3>')
+    expect(html).toContain('<ul>')
+    expect(html).toContain('<li>this is bullet point 1</li>')
+  })
+
+  it('converts pasted checkbox lists into task lists', () => {
+    const checklistHtml = `<p><b>Task Checklist</b></p>
+<ul>
+<li><input type="checkbox" checked> User Authentication</li>
+<li><input type="checkbox" checked> Rich Text Formatting</li>
+<li><input type="checkbox" checked> Auto Save</li>
+<li><input type="checkbox"> Real-time Collaboration</li>
+<li><input type="checkbox"> AI Writing Assistant</li>
+</ul>`
+    const html = convertPastedContent('Task Checklist\nUser Authentication\n...', checklistHtml)
+    expect(html).toContain('data-type="taskList"')
+    expect(html).toContain('data-type="taskItem"')
+    expect(html).toContain('data-checked="true"')
+    expect(html).toContain('<p>User Authentication</p>')
+    expect(html).toContain('data-checked="false"')
+    expect(html).toContain('<p>AI Writing Assistant</p>')
+    expect(html).not.toContain('type="checkbox"')
+  })
+})

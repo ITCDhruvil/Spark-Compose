@@ -30,10 +30,15 @@ export function Dialog({ open, onClose, title, description, children, className 
   if (!open || !mounted) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={cn('relative bg-background border rounded-xl shadow-xl w-full max-w-md mx-4', className)}>
-        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b bg-muted/20">
+      <div
+        className={cn(
+          'relative bg-background border rounded-xl shadow-xl w-full max-w-md mx-auto max-h-[min(92vh,880px)] flex flex-col overflow-hidden',
+          className,
+        )}
+      >
+        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b bg-muted/20 shrink-0">
           <div className="min-w-0">
             <h2 className="text-base font-semibold leading-tight">{title}</h2>
             {description && (
@@ -44,7 +49,7 @@ export function Dialog({ open, onClose, title, description, children, className 
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="px-5 py-4 min-h-0 flex-1 overflow-hidden flex flex-col">{children}</div>
       </div>
     </div>,
     document.body,

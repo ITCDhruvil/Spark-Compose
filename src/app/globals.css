@@ -137,6 +137,23 @@
   flex-direction: column;
 }
 
+.editor-canvas-scroll > .draft-enhance-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: block;
+}
+
+/* Hide scrollbar in draft chat (still scrollable) */
+.draft-chat-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.draft-chat-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .editor-canvas .ProseMirror {
   flex: 1 1 auto;
   min-height: 100%;
@@ -353,57 +370,67 @@
   color: inherit;
 }
 
-/* /ask tagged prompt + answer blocks */
+/* /ask tagged prompt + answer blocks — expert knowledge UI */
 .ProseMirror .ask-block {
-  border-radius: 0.75rem;
-  background: hsl(var(--primary) / 0.06);
-  border: 1px solid hsl(var(--primary) / 0.12);
-  padding: 0.65rem 0.85rem;
-  margin: 0.5rem 0;
+  border-radius: 1rem;
+  background: hsl(var(--primary) / 0.07);
+  border: 1px solid hsl(var(--primary) / 0.16);
+  padding: 0.85rem 1rem;
+  margin: 0.65rem 0;
+  min-height: 3rem;
 }
 
 .ProseMirror .ask-block-prompt {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.4rem 0.5rem;
+  gap: 0.5rem 0.65rem;
 }
 
 .ProseMirror .ask-tag {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 650;
   line-height: 1;
-  padding: 0.28rem 0.5rem;
+  padding: 0.35rem 0.65rem;
   border-radius: 999px;
-  background: hsl(var(--primary) / 0.12);
+  background: hsl(var(--primary) / 0.14);
   color: hsl(var(--primary));
   user-select: none;
+  margin-top: 0.15rem;
 }
 
 .ProseMirror .ask-tag-answer {
+  background: hsl(210 40% 96%);
+  color: hsl(215 25% 35%);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.dark .ProseMirror .ask-tag-answer {
   background: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
-  text-transform: lowercase;
 }
 
 .ProseMirror .ask-block-content {
   flex: 1;
-  min-width: 12rem;
+  min-width: 14rem;
   outline: none;
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.65;
+  font-size: 0.975rem;
+  padding: 0.1rem 0;
 }
 
 .ProseMirror .ask-block-content.is-empty::before,
 .ProseMirror .ask-block-prompt .is-empty::before {
-  content: 'Complete your question with . or ?';
+  content: 'Ask your expert — what do you want to understand? End with . or ?';
   float: left;
   color: hsl(var(--muted-foreground));
   font-style: italic;
-  opacity: 0.55;
+  opacity: 0.6;
   pointer-events: none;
   height: 0;
 }
@@ -412,19 +439,21 @@
   flex-basis: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.25rem;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid hsl(var(--primary) / 0.1);
 }
 
 .ProseMirror .ask-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  height: 1.75rem;
-  padding: 0 0.7rem;
+  height: 2rem;
+  padding: 0 0.85rem;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 550;
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -451,13 +480,15 @@
 
 .ProseMirror .ask-block-status {
   flex-basis: 100%;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .ProseMirror .ask-block-answer {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
 }
 
 .ProseMirror .ask-block-answer-header {
@@ -465,7 +496,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
-  min-height: 1.75rem;
+  min-height: 1.85rem;
   flex-wrap: wrap;
 }
 
@@ -483,6 +514,11 @@
 
 .ProseMirror .ask-block-answer-body {
   min-width: 0;
+}
+
+.ProseMirror .ask-block-answer-content {
+  font-size: 0.95rem;
+  line-height: 1.65;
 }
 
 .ProseMirror .ask-block-answer-content > *:first-child {

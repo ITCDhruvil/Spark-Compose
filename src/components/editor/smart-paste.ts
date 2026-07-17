@@ -7,6 +7,15 @@ import {
   looksLikeCsv,
   parsePasteUrl,
 } from '@/lib/editor/paste-structure'
+import {
+  type StructuredBlock,
+  type PasteLineHint,
+  classifyPasteLines,
+  classifyPasteToHtml,
+  extractLineHintsFromHtml,
+  normalizeChecklistHtml,
+  normalizePasteNewlines,
+} from '@/lib/editor/paste-line-classifier'
 import { parseEmbedUrl } from './extensions/video-embed'
 
 // ── Turndown: HTML → Markdown (used only for cleanup normalization) ──────────
@@ -110,185 +119,61 @@ function looksLikeMarkdown(text: string): boolean {
 /** Numbered sections + bullets without markdown syntax (method statements, reports). */
 export function looksLikeStructuredDocument(text: string): boolean {
   if (looksLikeMarkdown(text)) return false
-  const lines = text.replace(/\r\n/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean)
+  const lines = normalizePasteNewlines(text).split('\n').map((l) => l.trim()).filter(Boolean)
   if (lines.length < 2) return false
   const numbered = lines.filter((l) => /^\d+[.)]\s+\S/.test(l)).length
-  const bullets = lines.filter((l) => /^[-•*–—]\s+\S/.test(l)).length
+  const bullets = lines.filter((l) => /^[-•*–—·▪]/.test(l)).length
   const hasTitle = lines.some((l) => /[—–-]/.test(l) && l.length > 12)
   return numbered >= 2 || (numbered >= 1 && bullets >= 1) || (hasTitle && numbered >= 1)
 }
 
-type StructuredBlock =
-  | { type: 'h1'; text: string }
-  | { type: 'h2'; text: string }
-  | { type: 'h3'; text: string }
-  | { type: 'p'; text: string }
-  | { type: 'ul'; items: string[] }
-  | { type: 'ol'; items: string[] }
+export type { StructuredBlock, PasteLineHint }
 
-function parseNumberedLine(line: string): { num: number; label: string } | null {
-  const m = line.trim().match(/^(\d+)[.)]\s+(.+)$/)
-  if (!m) return null
-  return { num: parseInt(m[1], 10), label: m[2].trim() }
-}
-
-function parseBulletLine(line: string): string | null {
-  const m = line.trim().match(/^[-•*–—]\s+(.+)$/)
-  return m ? m[1].trim() : null
-}
-
-function isShortSectionLabel(label: string): boolean {
-  const words = label.split(/\s+/).filter(Boolean)
-  if (words.length <= 6 && label.length <= 72) return true
-  return words.length <= 3
-}
-
-function nextNonEmptyLine(lines: string[], from: number): { index: number; text: string } | null {
-  for (let j = from; j < lines.length; j++) {
-    const t = lines[j].trim()
-    if (t) return { index: j, text: t }
-  }
-  return null
-}
-
-function isDocumentTitle(line: string, lineIndex: number, lines: string[]): boolean {
-  if (lineIndex > 0) return false
-  const t = line.trim()
-  if (!t) return false
-  if (parseBulletLine(t) || parseNumberedLine(t)) return false
-  if (/[—–-]/.test(t) && t.length >= 10) return true
-  if (/^(method statement|rams|toolbox talk|site instruction|inspection report|progress report)\b/i.test(t)) {
-    return true
-  }
-  const nxt = nextNonEmptyLine(lines, lineIndex + 1)
-  if (nxt) {
-    const num = parseNumberedLine(nxt.text)
-    if (num && isShortSectionLabel(num.label)) return true
-  }
-  return t.length < 140 && !/^\d+[.)]\s/.test(t) && !t.endsWith('.')
-}
-
-/** Parse plain text into document blocks (titles, sections, lists, paragraphs). */
+/** @deprecated Use classifyPasteLines */
 export function parseStructuredBlocks(text: string): StructuredBlock[] {
-  const lines = text.replace(/\r\n/g, '\n').split('\n')
-  const blocks: StructuredBlock[] = []
-  let i = 0
-  let seenContent = false
-
-  while (i < lines.length) {
-    const raw = lines[i]
-    const trimmed = raw.trim()
-    if (!trimmed) {
-      i++
-      continue
-    }
-
-    if (!seenContent && isDocumentTitle(trimmed, i, lines)) {
-      blocks.push({ type: 'h1', text: trimmed })
-      seenContent = true
-      i++
-      continue
-    }
-    seenContent = true
-
-    const bullet = parseBulletLine(raw)
-    if (bullet) {
-      const items: string[] = []
-      while (i < lines.length) {
-        const b = parseBulletLine(lines[i])
-        if (!b) break
-        items.push(b)
-        i++
-      }
-      blocks.push({ type: 'ul', items })
-      continue
-    }
-
-    const numbered = parseNumberedLine(raw)
-    if (numbered) {
-      const nxt = nextNonEmptyLine(lines, i + 1)
-      const nxtNumbered = nxt ? parseNumberedLine(nxt.text) : null
-
-      // Two or more consecutive numbered lines → ordered list (steps)
-      if (nxtNumbered && nxtNumbered.num === numbered.num + 1) {
-        const items: string[] = []
-        let expected = numbered.num
-        let j = i
-        while (j < lines.length) {
-          const n = parseNumberedLine(lines[j])
-          if (!n || n.num !== expected) break
-          items.push(n.label)
-          expected++
-          j++
-        }
-        blocks.push({ type: 'ol', items })
-        i = j
-        continue
-      }
-
-      // Single numbered line with short label → section heading (e.g. "1. Scope")
-      if (isShortSectionLabel(numbered.label)) {
-        blocks.push({ type: 'h2', text: numbered.label })
-        i++
-        continue
-      }
-
-      blocks.push({ type: 'ol', items: [numbered.label] })
-      i++
-      continue
-    }
-
-    if (trimmed === trimmed.toUpperCase() && trimmed.length < 80 && /[A-Z]/.test(trimmed)) {
-      blocks.push({ type: 'h3', text: trimmed })
-      i++
-      continue
-    }
-
-    if (/:\s*$/.test(trimmed) && trimmed.length < 100) {
-      blocks.push({ type: 'h3', text: trimmed.replace(/:\s*$/, '') })
-      i++
-      continue
-    }
-
-    const para: string[] = [trimmed]
-    i++
-    while (i < lines.length) {
-      const t = lines[i].trim()
-      if (!t) break
-      if (parseBulletLine(lines[i]) || parseNumberedLine(lines[i])) break
-      if (t === t.toUpperCase() && t.length < 80 && /[A-Z]/.test(t)) break
-      para.push(t)
-      i++
-    }
-    blocks.push({ type: 'p', text: para.join(' ') })
-  }
-
-  return blocks
-}
-
-export function structuredBlocksToHtml(blocks: StructuredBlock[]): string {
-  return blocks.map((b) => {
-    switch (b.type) {
-      case 'h1':
-        return `<h1>${esc(b.text)}</h1>`
-      case 'h2':
-        return `<h2>${esc(b.text)}</h2>`
-      case 'h3':
-        return `<h3>${esc(b.text)}</h3>`
-      case 'p':
-        return `<p>${esc(b.text)}</p>`
-      case 'ul':
-        return `<ul>${b.items.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`
-      case 'ol':
-        return `<ol>${b.items.map((item) => `<li>${esc(item)}</li>`).join('')}</ol>`
-      default:
-        return ''
-    }
-  }).join('\n')
+  return classifyPasteLines(text)
 }
 
 export function structuredTextToHtml(text: string): string {
-  return structuredBlocksToHtml(parseStructuredBlocks(text))
+  return classifyPasteToHtml(text)
+}
+
+/** True when HTML is only paragraphs/divs — typical unformatted Word paste. */
+export function isParagraphOnlyHtml(html: string): boolean {
+  if (!html.trim()) return false
+  if (/<(h[1-6]|table|ul|ol|li|pre|blockquote)\b/i.test(html)) return false
+  return /<(p|div|br)\b/i.test(html)
+}
+
+/** Pull line-broken plain text from trivial HTML (Word / browser copy). */
+export function htmlToPlainLines(html: string): string {
+  let s = cleanHtml(html)
+  s = s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\u00a0/g, ' ')
+  return s.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function resolvePastePlainText(text: string, html: string): string {
+  let plain = normalizePasteNewlines(text).trim()
+  const htmlTrim = html.trim()
+
+  if (!htmlTrim) return plain
+
+  const cleaned = cleanHtml(htmlTrim)
+  const fromHtml = htmlToPlainLines(cleaned).trim()
+  if (!fromHtml) return plain
+
+  const plainLines = plain ? plain.split('\n').filter((l) => l.trim()).length : 0
+  const htmlLines = fromHtml.split('\n').filter((l) => l.trim()).length
+
+  // Prefer HTML line breaks when Word sends <p> per line but plain text is flattened
+  if (!plain || htmlLines > plainLines) return fromHtml
+  if (isParagraphOnlyHtml(cleaned) && htmlLines >= 2) return fromHtml
+  return plain
 }
 
 // ── Markdown → clean HTML ────────────────────────────────────────────────────
@@ -353,17 +238,22 @@ function markdownToHtml(md: string): string {
 }
 
 // ── Main conversion ──────────────────────────────────────────────────────────
-export function convertPastedContent(text: string, html: string): string {
+export function convertPastedContent(
+  text: string,
+  html: string,
+  hints: PasteLineHint[] = [],
+): string {
   if (html.includes('data-pm-slice')) return ''
 
-  const plain = text.trim()
   const htmlTrim = html.trim()
+  const plain = resolvePastePlainText(text, html)
+  const lineHints = hints.length > 0 ? hints : (htmlTrim ? extractLineHintsFromHtml(htmlTrim) : [])
 
-  // Rich HTML from Word / Google Docs / browser with real structure
+  // Rich HTML from Word / Google Docs with real semantic structure
   if (htmlTrim && !isBrowserPlainTextHtml(htmlTrim)) {
     const cleaned = cleanHtml(htmlTrim)
     if (/<(h[1-6]|table|ul|ol|li|pre|blockquote)\b/i.test(cleaned)) {
-      return cleaned
+      return normalizeChecklistHtml(cleaned)
     }
   }
 
@@ -375,17 +265,13 @@ export function convertPastedContent(text: string, html: string): string {
     if (tableHtml) return tableHtml
   }
 
-  // Structured construction docs, reports, method statements
-  if (plain && looksLikeStructuredDocument(plain)) {
-    return structuredTextToHtml(plain)
-  }
-
   if (plain && looksLikeMarkdown(plain)) {
     return markdownToHtml(plain)
   }
 
   if (plain) {
-    return structuredTextToHtml(plain)
+    const classified = classifyPasteToHtml(plain, lineHints)
+    return normalizeChecklistHtml(classified)
   }
 
   return ''
@@ -476,7 +362,8 @@ export const SmartPaste = Extension.create({
               }
             }
 
-            const convertedHtml = convertPastedContent(textData, htmlData)
+            const lineHints = htmlData ? extractLineHintsFromHtml(htmlData) : []
+            const convertedHtml = convertPastedContent(textData, htmlData, lineHints)
             if (!convertedHtml) return false
 
             const wrapper = document.createElement('div')

@@ -234,6 +234,16 @@ export interface AskDraftQuestion {
   id: string
   question: string
   options: string[]
+  /** When true, user can pick several chips before continuing */
+  allowMultiple?: boolean
+}
+
+export interface DraftOutlineSection {
+  id: string
+  /** Section heading the user will write under */
+  heading: string
+  /** Short note for the coach (not shown as article body) */
+  intent?: string
 }
 
 export interface AskDraftPlan {
@@ -245,10 +255,20 @@ export interface AskDraftPlan {
   length?: ConstructionDraftLength
   includeSampleImage?: boolean
   photoPlacementHint?: string
+  /** Filled interview WHY slots from the playbook */
+  whys?: Record<string, string>
+  /** Short human-readable brief for confirm UI */
+  briefSummary?: string
+  /** Working title / draft name for guided writing */
+  draftName?: string
+  /** AI-proposed section outline after Q&A (not a fixed template) */
+  outline?: DraftOutlineSection[]
 }
 
 export interface AskDraftRequest {
   prompt: string
+  /** Seed or pin the playbook when the user picks a type up front */
+  contentType?: ConstructionContentType
   messages?: unknown[]
   toolResults?: { toolCallId: string; output: string }[]
 }
@@ -258,6 +278,8 @@ export type AskDraftResponse =
       type: 'questions'
       kind: 'required' | 'optional'
       questions: AskDraftQuestion[]
+      /** Conversational WHY / guidance line from replyToUser */
+      assistantMessage?: string
       messages: unknown[]
       pendingToolCallIds: string[]
       pendingToolNames: string[]
@@ -265,8 +287,85 @@ export type AskDraftResponse =
   | {
       type: 'ready'
       plan: AskDraftPlan
+      assistantMessage?: string
       messages: unknown[]
     }
+
+/** Guided writing after interview (title + section-by-section) */
+export type DraftGuideAction = 'suggestTitles' | 'sectionGuide' | 'improveSection' | 'proposeOutline' | 'outlineImpact'
+
+
+
+export interface DraftGuideRequest {
+  action: DraftGuideAction
+  plan: AskDraftPlan
+  /** Current title candidates context / previous title to avoid */
+  previousTitles?: string[]
+  sectionId?: string
+  sectionHeading?: string
+  /** User-written section body for improve */
+  sectionText?: string
+  /** Document headings already present */
+  documentHeadings?: string[]
+}
+
+export interface DraftGuideResponse {
+  action: DraftGuideAction
+  /** suggestTitles */
+  titles?: string[]
+  /** sectionGuide */
+  guide?: {
+    heading: string
+    whatToWrite: string
+    howToWrite: string
+    tips?: string[]
+  }
+  /** improveSection — markdown for the section body only (no meta) */
+  improvedMarkdown?: string
+  /** proposeOutline */
+  draftName?: string
+  outline?: DraftOutlineSection[]
+  /** outlineImpact — sections worth adding for more punch */
+  impactSuggestions?: { heading: string; why: string }[]
+}
+
+/** Inline draft coaching — asked vs drafted + improvements */
+export type DraftEnhanceKind = 'add' | 'trend' | 'strengthen' | 'clarify'
+
+export interface DraftEnhanceExplanation {
+  title: string
+  detail: string
+}
+
+export interface DraftEnhanceImprovement {
+  id: string
+  kind: DraftEnhanceKind
+  /** Coach-card label only — never inserted into the document */
+  title: string
+  reason: string
+  /** Short preview shown in the coach panel */
+  suggestion: string
+  /** Ready-to-insert article markdown (## headings, tables, lists — no meta “Include…” lines) */
+  insertMarkdown: string
+  /** Insert after the document section whose heading best matches this text */
+  afterHeading?: string
+}
+
+
+export interface DraftEnhanceRequest {
+  documentText: string
+  brief?: string
+  topic?: string
+  contentType?: ConstructionContentType
+  audience?: string
+}
+
+export interface DraftEnhanceResponse {
+  askedSummary: string
+  draftSummary: string
+  explanations: DraftEnhanceExplanation[]
+  improvements: DraftEnhanceImprovement[]
+}
 
 export interface CustomToneRequest {
   selection: string
@@ -293,6 +392,9 @@ export interface ConstructionDraftRequest {
   angle?: string
   mustInclude?: string
   length?: ConstructionDraftLength
+  /** Interview WHYs from conversational draft */
+  whys?: Record<string, string>
+  briefSummary?: string
   docId?: string
   model?: string
   /** @deprecated prefer articleImages */

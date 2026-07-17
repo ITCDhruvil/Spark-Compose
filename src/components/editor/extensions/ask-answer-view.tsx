@@ -6,11 +6,11 @@ import { RefreshCw } from 'lucide-react'
 import type { AskPreset } from '@/lib/api/ai-types'
 import { streamAskAnswer } from '@/lib/editor/stream-ask-answer'
 
-const ASK_PRESETS: { id: AskPreset; label: string }[] = [
-  { id: 'default', label: 'Regenerate' },
-  { id: 'short', label: 'Short' },
-  { id: 'detailed', label: 'Detailed' },
-  { id: 'toolbox', label: 'Toolbox talk' },
+const ASK_PRESETS: { id: AskPreset; label: string; title: string }[] = [
+  { id: 'default', label: 'Teach again', title: 'Regenerate with adaptive teaching depth' },
+  { id: 'short', label: 'Essentials', title: 'Shorter core idea' },
+  { id: 'detailed', label: 'Go deeper', title: 'More WHY and field checks' },
+  { id: 'toolbox', label: 'Field brief', title: 'Crew-ready briefing style' },
 ]
 
 function promptFromPreviousSibling(editor: NodeViewProps['editor'], pos: number) {
@@ -26,7 +26,10 @@ export function AskAnswerView({ node, getPos, editor }: NodeViewProps) {
   const [busy, setBusy] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const streaming = Boolean(node.attrs.streaming) || busy
-  const isLoading = streaming || node.textContent.trim() === 'Answering...'
+  const loadingText = node.textContent.trim()
+  const isLoading = streaming
+    || loadingText === 'Answering...'
+    || loadingText === 'Thinking it through…'
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
@@ -60,13 +63,14 @@ export function AskAnswerView({ node, getPos, editor }: NodeViewProps) {
       className={`ask-block ask-block-answer${streaming ? ' is-streaming' : ''}`}
     >
       <div className="ask-block-answer-header" contentEditable={false}>
-        <span className="ask-tag ask-tag-answer">answer</span>
+        <span className="ask-tag ask-tag-answer" title="Expert insight">insight</span>
         {!isLoading && (
           <div className="ask-block-answer-actions">
             {ASK_PRESETS.map((p) => (
               <button
                 key={p.id}
                 type="button"
+                title={p.title}
                 className="ask-btn ask-btn-secondary ask-btn-regenerate"
                 onMouseDown={(e) => { e.preventDefault(); void onRegenerate(p.id) }}
               >

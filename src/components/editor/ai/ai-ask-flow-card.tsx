@@ -309,12 +309,14 @@ export function AiAskFlowCard({ open, onClose, editor }: AiAskFlowCardProps) {
 
   const addPhotoFiles = (files: FileList | null) => {
     if (!files?.length) return
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name))
+    if (!imageFiles.length) return
     setPhotos((prev) => {
       const room = MAX_IMAGES - prev.length
       if (room <= 0) return prev
       return [
         ...prev,
-        ...Array.from(files).slice(0, room).map((file) => ({
+        ...imageFiles.slice(0, room).map((file) => ({
           id: Math.random().toString(36).slice(2),
           file,
           previewUrl: URL.createObjectURL(file),
@@ -484,44 +486,88 @@ export function AiAskFlowCard({ open, onClose, editor }: AiAskFlowCardProps) {
         {step === 'image_upload' && (
           <>
             <p className="text-sm font-medium">Upload photos</p>
-            <p className="text-xs text-muted-foreground">Up to {MAX_IMAGES} images.</p>
-            <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-6 cursor-pointer hover:bg-muted/30">
-              <ImageIcon className="w-5 h-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Click to add images</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="sr-only"
-                onChange={(e) => {
-                  addPhotoFiles(e.target.files)
-                  e.target.value = ''
-                }}
-              />
-            </label>
-            {photos.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {photos.map((photo) => (
-                  <div key={photo.id} className="relative">
-                    <img src={photo.previewUrl} alt="" className="h-16 w-16 object-cover rounded-md border" />
-                    <button
-                      type="button"
-                      onClick={() => setPhotos((p) => {
-                        const t = p.find((x) => x.id === photo.id)
-                        if (t) URL.revokeObjectURL(t.previewUrl)
-                        return p.filter((x) => x.id !== photo.id)
-                      })}
-                      className="absolute -top-1.5 -right-1.5 bg-background border rounded-full p-0.5"
+            <p className="text-xs text-muted-foreground">
+              {photos.length
+                ? `${photos.length} of ${MAX_IMAGES} photo${photos.length === 1 ? '' : 's'} selected`
+                : `Up to ${MAX_IMAGES} images.`}
+            </p>
+
+            {photos.length > 0 ? (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {photos.map((photo, index) => (
+                    <div
+                      key={photo.id}
+                      className="relative rounded-lg border bg-background overflow-hidden shadow-sm"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.previewUrl}
+                        alt={photo.file.name}
+                        className="h-28 w-full object-cover bg-muted"
+                      />
+                      <div className="px-2 py-1.5 space-y-0.5 border-t">
+                        <p className="text-[11px] font-medium truncate" title={photo.file.name}>
+                          {photo.file.name}
+                        </p>
+                        <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+                          Ready · IMAGE_{index + 1}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPhotos((p) => {
+                          const t = p.find((x) => x.id === photo.id)
+                          if (t) URL.revokeObjectURL(t.previewUrl)
+                          return p.filter((x) => x.id !== photo.id)
+                        })}
+                        className="absolute top-1.5 right-1.5 rounded-full bg-background/95 border p-1 shadow-sm hover:bg-muted"
+                        aria-label={`Remove ${photo.file.name}`}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {photos.length < MAX_IMAGES && (
+                  <label className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border bg-background hover:bg-muted cursor-pointer">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    Add more photos
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      onChange={(e) => {
+                        addPhotoFiles(e.target.files)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                )}
               </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-6 cursor-pointer hover:bg-muted/30 transition-colors">
+                <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                <span className="text-xs font-medium text-foreground">Click to add images</span>
+                <span className="text-[11px] text-muted-foreground">PNG, JPG up to 3 MB each</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => {
+                    addPhotoFiles(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
             )}
             <WizardNav>
               <WizardBack onClick={() => setStep('image_choice')} />
-              <WizardContinue disabled={photos.length === 0} onClick={() => setStep('image_placement')} />
+              <WizardContinue disabled={photos.length === 0} onClick={() => setStep('image_placement')}>
+                Continue ({photos.length} photo{photos.length === 1 ? '' : 's'})
+              </WizardContinue>
             </WizardNav>
           </>
         )}
@@ -529,21 +575,43 @@ export function AiAskFlowCard({ open, onClose, editor }: AiAskFlowCardProps) {
         {step === 'image_placement' && (
           <>
             <p className="text-sm font-medium">Where should images go?</p>
+            {photos.length > 0 && (
+              <div className="rounded-lg border bg-muted/20 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">
+                  {photos.length} photo{photos.length === 1 ? '' : 's'} will be included
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {photos.map((photo) => (
+                    <div key={photo.id} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.previewUrl}
+                        alt={photo.file.name}
+                        title={photo.file.name}
+                        className="h-12 w-12 object-cover rounded-md border bg-background"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <button
                 type="button"
+                disabled={busy}
                 onClick={() => {
                   setPlacementMode('auto')
                   void finishWithImages()
                 }}
-                className="w-full text-sm px-3 py-2.5 rounded-lg border hover:bg-muted text-left"
+                className="w-full text-sm px-3 py-2.5 rounded-lg border hover:bg-muted text-left disabled:opacity-50"
               >
-                Auto-detect placement & captions
+                {busy ? 'Uploading photos…' : 'Auto-detect placement & captions'}
               </button>
               <button
                 type="button"
+                disabled={busy}
                 onClick={() => setPlacementMode('manual')}
-                className={`w-full text-sm px-3 py-2.5 rounded-lg border text-left ${
+                className={`w-full text-sm px-3 py-2.5 rounded-lg border text-left disabled:opacity-50 ${
                   placementMode === 'manual' ? 'border-primary bg-primary/5' : 'hover:bg-muted'
                 }`}
               >
@@ -563,7 +631,7 @@ export function AiAskFlowCard({ open, onClose, editor }: AiAskFlowCardProps) {
                   disabled={!manualPlacement.trim() || busy}
                   onClick={() => void finishWithImages()}
                 >
-                  Generate draft
+                  {busy ? 'Uploading photos…' : 'Generate draft'}
                 </WizardContinue>
               </>
             )}

@@ -7,10 +7,10 @@ import type { AskPreset } from '@/lib/api/ai-types'
 import { aiApi } from '@/lib/api/ai-client'
 import { insertAndStreamAskAnswer } from '@/lib/editor/stream-ask-answer'
 
-const ASK_PRESETS: { id: AskPreset; label: string }[] = [
-  { id: 'short', label: 'Short' },
-  { id: 'detailed', label: 'Detailed' },
-  { id: 'toolbox', label: 'Toolbox talk' },
+const ASK_PRESETS: { id: AskPreset; label: string; title: string }[] = [
+  { id: 'short', label: 'Essentials', title: 'Short teaching answer — core idea only' },
+  { id: 'detailed', label: 'Go deeper', title: 'Full mentoring with WHY and field checks' },
+  { id: 'toolbox', label: 'Field brief', title: 'Crew-ready safety/quality briefing' },
 ]
 
 function isReady(text: string) {
@@ -63,8 +63,6 @@ export function AskPromptView({ node, getPos, editor }: NodeViewProps) {
     }
   }, [editor, syncHasAnswer])
 
-  // Capture-phase paste runs before ProseMirror/SmartPaste, which would
-  // otherwise insert block nodes and spill them onto a new line below.
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
@@ -109,10 +107,9 @@ export function AskPromptView({ node, getPos, editor }: NodeViewProps) {
     setBusy('improve')
     try {
       const { answer } = await aiApi.ask({
-        message: `Improve this construction question so it is clearer and more specific. Return ONLY the improved question, ending with ?\n\n${prompt}`,
+        message: `You are a construction mentor. Rewrite this into ONE sharper learning question that will teach more (clearer topic, situation, and what they want to understand — the WHY). Return ONLY the improved question, ending with ?\n\n${prompt}`,
       })
       let improved = (answer ?? '').trim().replace(/^["']|["']$/g, '')
-      // Take first line only if model added extra text
       improved = improved.split('\n').map((l) => l.trim()).find((l) => l.length > 0) ?? improved
       if (improved) {
         replacePromptText(/[.?!？]\s*$/.test(improved) ? improved : `${improved}?`)
@@ -155,11 +152,16 @@ export function AskPromptView({ node, getPos, editor }: NodeViewProps) {
 
   return (
     <NodeViewWrapper ref={wrapRef} className="ask-block ask-block-prompt">
-      <span className="ask-tag" contentEditable={false}>/ask</span>
+      <span className="ask-tag" contentEditable={false} title="Ask a construction expert">/ask</span>
       <NodeViewContent className="ask-block-content" />
       {busy === 'improve' && (
         <span className="ask-block-status ai-improve-shimmer-text" contentEditable={false}>
-          Improving...
+          Sharpening your question…
+        </span>
+      )}
+      {busy === 'ask' && (
+        <span className="ask-block-status ai-improve-shimmer-text" contentEditable={false}>
+          Thinking it through…
         </span>
       )}
       {ready && !busy && !hasAnswer && (
@@ -167,16 +169,18 @@ export function AskPromptView({ node, getPos, editor }: NodeViewProps) {
           <button
             type="button"
             className="ask-btn ask-btn-primary"
+            title="Get an expert teaching answer"
             onMouseDown={(e) => { e.preventDefault(); void onAsk('default') }}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            Ask
+            Teach me
           </button>
           {ASK_PRESETS.map((p) => (
             <button
               key={p.id}
               type="button"
               className="ask-btn ask-btn-secondary"
+              title={p.title}
               onMouseDown={(e) => { e.preventDefault(); void onAsk(p.id) }}
             >
               {p.label}
@@ -185,10 +189,11 @@ export function AskPromptView({ node, getPos, editor }: NodeViewProps) {
           <button
             type="button"
             className="ask-btn ask-btn-secondary"
+            title="Make the question clearer so you learn more"
             onMouseDown={(e) => { e.preventDefault(); void onImprove() }}
           >
             <Wand2 className="w-3.5 h-3.5" />
-            Improve question
+            Sharpen question
           </button>
         </div>
       )}

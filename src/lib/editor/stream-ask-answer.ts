@@ -46,7 +46,7 @@ function writeLoading(editor: Editor, answerPos: number, nodeSize: number) {
         attrs: { streaming: true },
         content: [{
           type: 'paragraph',
-          content: [{ type: 'text', text: 'Answering...', marks: [{ type: 'aiLoading' }] }],
+          content: [{ type: 'text', text: 'Thinking it through…', marks: [{ type: 'aiLoading' }] }],
         }],
       },
     )

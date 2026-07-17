@@ -9,6 +9,7 @@ import {
   type DraftImageAnalysis,
 } from '@/lib/server/ai/prompts'
 import { getCorpusText } from '@/lib/server/ai/rag-store'
+import { getDraftPlaybook } from '@/lib/editor/draft-playbooks'
 
 function resolveImages(body: ConstructionDraftRequest): ConstructionDraftImage[] {
   if (body.articleImages?.length) return body.articleImages
@@ -107,6 +108,9 @@ export async function POST(req: Request) {
           angle: body.angle,
           mustInclude: body.mustInclude,
           length: body.length,
+          whys: body.whys,
+          briefSummary: body.briefSummary,
+          generationHints: getDraftPlaybook(body.contentType).generationHints,
           referenceNotes: referenceNotes || undefined,
           articleImagePlacementHint: body.articleImagePlacementHint,
           imageCount: images.length,

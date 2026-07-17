@@ -367,16 +367,15 @@ function shouldShowAiSelection({ editor: ed }: { editor: Editor }) {
   return text.trim().length > 0
 }
 
-function coordsBelowRange(editor: Editor, range: TextRange): { top: number; left: number } {
+function coordsAboveRange(editor: Editor, range: TextRange, offsetPx = 48): { top: number; left: number } {
   try {
     const start = editor.view.coordsAtPos(range.from)
     const endPos = Math.max(range.from, range.to - (range.to > range.from ? 1 : 0))
     const end = editor.view.coordsAtPos(endPos)
-    const endEdge = editor.view.coordsAtPos(range.to)
-    const bottom = Math.max(start.bottom, end.bottom, endEdge.bottom)
-    return { top: bottom + 10, left: start.left }
+    const topEdge = Math.min(start.top, end.top)
+    return { top: topEdge - offsetPx, left: start.left }
   } catch {
-    return { top: 120, left: 24 }
+    return { top: 80, left: 24 }
   }
 }
 
@@ -457,7 +456,7 @@ export function AiSelectionMenu({ editor }: AiSelectionMenuProps) {
   const summaryMatch = findSummaryReplacement(getSelectedText())
 
   const pinActionBar = useCallback((range: TextRange) => {
-    setActionPos(coordsBelowRange(editor, range))
+    setActionPos(coordsAboveRange(editor, range))
   }, [editor])
 
   const openPanel = useCallback((next: Panel) => {
@@ -465,7 +464,7 @@ export function AiSelectionMenu({ editor }: AiSelectionMenuProps) {
     if (!range && next !== 'brief') return
     if (range) {
       setSelectionRange(range)
-      setActionPos(coordsBelowRange(editor, range))
+      setActionPos(coordsAboveRange(editor, range))
     }
     setPanel(next)
   }, [captureRange, selectionRange, editor])
@@ -673,9 +672,9 @@ export function AiSelectionMenu({ editor }: AiSelectionMenuProps) {
 
     return {
       strategy: 'fixed' as const,
-      placement: 'bottom-start' as const,
+      placement: 'top-start' as const,
       offset: 8,
-      flip: false,
+      flip: true,
       shift: { padding: 8 },
       scrollTarget,
     }
@@ -726,7 +725,7 @@ export function AiSelectionMenu({ editor }: AiSelectionMenuProps) {
       ?? rewrite.range
       ?? selectionRange
     if (range) {
-      setActionPos(coordsBelowRange(editor, range))
+      setActionPos(coordsAboveRange(editor, range))
       return
     }
     // Glossary undo has no range — pin bar near bottom-left of the viewport

@@ -350,13 +350,13 @@ Return JSON only: { "text": "..." }`
 export function askPresetInstruction(preset: 'default' | 'short' | 'detailed' | 'toolbox'): string {
   switch (preset) {
     case 'short':
-      return 'Answer length: SHORT — 2–5 sentences max. Only the essentials.'
+      return `Preset: ESSENTIALS — Teach the core idea in 3–6 sentences. One "why it matters" line optional. End with one Go deeper question. No long sections.`
     case 'detailed':
-      return 'Answer length: DETAILED — thorough explanation with bullets and specifics where useful.'
+      return `Preset: GO DEEPER — Thorough mentoring with ## Why it matters and ## How it works / what to watch, bullets, and clear tradeoffs. End with 2 Go deeper questions.`
     case 'toolbox':
-      return 'Answer style: TOOLBOX TALK — plain field language for a crew briefing. Short bullets, actionable, safety-first. No jargon without a quick plain-English gloss.'
+      return `Preset: FIELD BRIEF — Crew-ready language. Short bullets, safety and quality first, plain-English gloss for jargon. End with one practical "What should we check next?" style go-deeper prompt.`
     default:
-      return 'Answer length: adaptive — brief for simple asks, longer with bullets when depth is needed.'
+      return `Preset: TEACH — Adaptive depth. Prefer understanding over a dump. Always include a brief WHY when non-obvious, and end with Go deeper follow-ups.`
   }
 }
 
@@ -432,6 +432,9 @@ export function constructionDraftPrompt(req: {
   angle?: string
   mustInclude?: string
   length?: ConstructionDraftLength
+  whys?: Record<string, string>
+  briefSummary?: string
+  generationHints?: string
   referenceNotes?: string
   articleImagePlacementHint?: string
   imageCount?: number
@@ -473,11 +476,18 @@ Figure numbers must be sequential (Figure 1, Figure 2, …).
 `
   }
 
+  const whyLines = req.whys
+    ? Object.entries(req.whys)
+        .filter(([, v]) => v?.trim())
+        .map(([k, v]) => `- ${k}: ${v.trim()}`)
+        .join('\n')
+    : ''
+
   return `You are a professional editor. Write ONLY a draft document — refuse any non-draft request.
 
 Write a ${req.contentType.replace(/_/g, ' ')} for this audience: ${req.audience}
 Topic: ${req.topic}
-${req.angle ? `Angle: ${req.angle}\n` : ''}${req.mustInclude ? `Must include: ${req.mustInclude}\n` : ''}${req.referenceNotes ? `Reference notes:\n${req.referenceNotes}\n` : ''}${imageRules}
+${req.angle ? `Angle: ${req.angle}\n` : ''}${req.mustInclude ? `Must include: ${req.mustInclude}\n` : ''}${req.briefSummary ? `Brief: ${req.briefSummary}\n` : ''}${whyLines ? `Interview WHYs (use as substance — do not invent conflicting facts):\n${whyLines}\n` : ''}${req.generationHints ? `Playbook guidance:\n${req.generationHints}\n` : ''}${req.referenceNotes ? `Reference notes:\n${req.referenceNotes}\n` : ''}${imageRules}
 Target length: ${wordTarget} words.
 
 STRUCTURE (required):
@@ -516,3 +526,58 @@ ${original.slice(0, 4000)}
 SUMMARY:
 ${summary.slice(0, 2000)}`
 }
+
+export function draftEnhancePrompt(req: {
+  documentText: string
+  brief?: string
+  topic?: string
+  contentType?: string
+  audience?: string
+}): string {
+  const context = [
+    req.contentType ? `Content type: ${req.contentType}` : '',
+    req.audience ? `Audience: ${req.audience}` : '',
+    req.topic ? `Topic: ${req.topic}` : '',
+    req.brief ? `User brief / interview WHYs:\n${req.brief}` : '',
+  ].filter(Boolean).join('\n')
+
+  return `You are a construction knowledge coach reviewing a draft document.
+Goal: help the author LEARN and improve the draft — not rewrite the whole piece.
+
+Compare what *they* asked for (brief/topic) with what the draft currently covers. Explain key concepts. Suggest concrete enhancements.
+
+Return JSON only:
+{
+  "askedSummary": "1–2 sentences in SECOND PERSON speaking to the author: start like 'You asked to…' or 'You wanted…' — never 'The user aimed…'",
+  "draftSummary": "1–2 sentences in SECOND PERSON: 'Your draft currently covers…'",
+  "explanations": [
+    { "title": "short concept name", "detail": "2–3 sentences teaching why it matters on site / in this draft" }
+  ],
+  "improvements": [
+    {
+      "id": "imp_1",
+      "kind": "add" | "trend" | "strengthen" | "clarify",
+      "title": "short coach-card label (e.g. Lifecycle comparison) — NOT an insert instruction",
+      "reason": "why this improves the draft (1–2 sentences, you/your)",
+      "suggestion": "1–2 sentence preview of what will be added (for the panel only)",
+      "insertMarkdown": "FULL article-ready markdown to insert. Must include a real ## or ### section title that belongs in the article (e.g. '## Lifecycle analysis'). Use paragraphs, bullets, and markdown tables when comparing data. Never start with 'Include', 'Consider adding', 'Highlight', or meta coaching. Write as if already part of the article.",
+      "afterHeading": "existing draft heading text to insert AFTER (best-match). Pick the most relevant section heading from the draft. Empty string if none fit."
+    }
+  ]
+}
+
+Rules:
+- askedSummary / draftSummary: ALWAYS second person ("you" / "your"). Never "the user".
+- explanations: 2–4 items
+- improvements: 3–5 items; mix kinds when possible
+- title: label for the UI only — never "Include a section…", "Add this…", "Consider…"
+- insertMarkdown: publishable content only; ##/### titles; tables for comparisons (markdown pipe tables). Do not invent fake standards numbers — use qualitative comparison or clearly illustrative figures labeled as examples if needed.
+- afterHeading: copy an existing heading from the DRAFT when possible so placement is relevant
+- Keep construction-accurate
+- If brief is empty, infer askedSummary from the draft topic (still second person)
+
+${context ? `BRIEF CONTEXT:\n${context}\n` : ''}
+DRAFT (truncated):
+${req.documentText.slice(0, 10000)}`
+}
+

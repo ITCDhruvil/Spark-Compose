@@ -643,8 +643,8 @@ export function AiDropdown({
             label="Ask"
             badge="New"
             help={{
-              what: 'Inserts an Ask block so you can question the AI inside the document.',
-              how: 'Use Ask from the selection menu or type /ask in the editor, then complete your question.',
+              what: 'Ask a construction expert in the document — learn the WHY, with follow-ups to go deeper.',
+              how: 'Type /ask, end with . or ?, then Teach me (or Go deeper / Field brief). Sharpen question if you want a clearer ask.',
             }}
           />
 
