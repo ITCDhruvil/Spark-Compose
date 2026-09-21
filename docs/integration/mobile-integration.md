@@ -60,7 +60,7 @@ More setup detail: [Prerequisites](../getting-started/prerequisites.md) · [Inst
 Mount the editor like this:
 
 ```tsx
-import { RichEditor } from '@/components/editor/rich-editor'
+import { RichEditor } from '@/components/editor'
 
 export function MobileEditorScreen() {
   return (
@@ -121,22 +121,25 @@ You can ignore or omit routes under `src/app/api/ai/` and never set `OPENAI_API_
 
 | What | Path |
 |------|------|
+| Public import | [`src/components/editor`](../../src/components/editor/index.ts) (`RichEditor`) |
 | Main editor component | [`src/components/editor/rich-editor.tsx`](../../src/components/editor/rich-editor.tsx) |
-| `ai` prop resolver | [`src/lib/editor/ai-capabilities.ts`](../../src/lib/editor/ai-capabilities.ts) |
-| AI enabled React context | [`src/lib/editor/editor-ai-context.tsx`](../../src/lib/editor/editor-ai-context.tsx) |
+| `ai` prop resolver | [`src/lib/editor/ai/plugin/ai-capabilities.ts`](../../src/lib/editor/ai/plugin/ai-capabilities.ts) |
+| AI enabled React context | [`src/lib/editor/ai/plugin/editor-ai-context.tsx`](../../src/lib/editor/ai/plugin/editor-ai-context.tsx) |
 | Demo page (with AI checkbox) | [`src/app/page.tsx`](../../src/app/page.tsx) |
-| Slash command list | [`src/components/editor/slash-command-items.tsx`](../../src/components/editor/slash-command-items.tsx) |
-| Table → chart | [`src/lib/editor/chart-from-table.ts`](../../src/lib/editor/chart-from-table.ts) + table menu |
-| Smart paste | [`src/components/editor/smart-paste.ts`](../../src/components/editor/smart-paste.ts) |
-| Local spell check | [`src/components/editor/extensions/ai-spellcheck.ts`](../../src/components/editor/extensions/ai-spellcheck.ts) |
+| Slash command list | [`src/components/editor/smart/slash-commands/slash-command-items.tsx`](../../src/components/editor/smart/slash-commands/slash-command-items.tsx) |
+| Table → chart | [`src/lib/editor/smart/spark-chart/chart-from-table.ts`](../../src/lib/editor/smart/spark-chart/chart-from-table.ts) + `smart/tables/table-menu` |
+| Smart paste | [`src/components/editor/smart/smart-paste/smart-paste.ts`](../../src/components/editor/smart/smart-paste/smart-paste.ts) |
+| Local spell check | [`src/components/editor/smart/spell-check/extensions/ai-spellcheck.ts`](../../src/components/editor/smart/spell-check/extensions/ai-spellcheck.ts) |
 
 ### Folder map: keep vs skip for mobile (no AI)
 
 | Path | Role for you |
 |------|----------------|
-| `src/components/editor/` | **Keep** — editor UI, extensions, toolbar, slash, paste |
-| `src/lib/editor/` | **Keep** — smart utilities (paste, chart, preferences) |
-| `src/components/editor/ai/` | **Skip** — Spark AI UI (still in repo; gated by `ai={false}`) |
+| `src/components/editor/core/<feature>/` | **Keep** — toolbar, dialogs, base TipTap nodes (see [project structure](../getting-started/project-structure.md)) |
+| `src/components/editor/smart/<feature>/` | **Keep** — slash, paste, TOC, charts, local spelling |
+| `src/lib/editor/core/<feature>/` + `smart/<feature>/` | **Keep** — preferences, paste, chart-from-table, slash utils |
+| `src/components/editor/ai/<feature>/` | **Skip** — Spark AI UI + AI extensions (gated by `ai={false}`) |
+| `src/lib/editor/ai/<feature>/` | **Skip** — AI helpers (`plugin/` still used for the toggle) |
 | `src/app/api/ai/` | **Skip** — LLM API routes |
 | `src/lib/api/ai-*.ts` | **Skip** — client wrappers for AI APIs |
 | `src/lib/server/ai/` | **Skip** — prompts, OpenAI streaming, cost |

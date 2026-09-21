@@ -17,6 +17,16 @@ function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
 }
 
+/** Vercel’s runtime filesystem is read-only except /tmp; local `.data/` still works. */
+function persistSafe(logs: CostLogEntry[]) {
+  try {
+    ensureDir()
+    fs.writeFileSync(DATA_FILE, JSON.stringify(logs, null, 2), 'utf8')
+  } catch {
+    // keep in-memory cache only
+  }
+}
+
 function buildLineItems(
   model: string,
   promptTokens: number,
@@ -87,13 +97,13 @@ function seedLogs(): CostLogEntry[] {
 
 function load(): CostLogEntry[] {
   if (cache) return cache
-  ensureDir()
-  if (!fs.existsSync(DATA_FILE)) {
-    cache = seedLogs()
-    persist(cache)
-    return cache
-  }
   try {
+    ensureDir()
+    if (!fs.existsSync(DATA_FILE)) {
+      cache = seedLogs()
+      persistSafe(cache)
+      return cache
+    }
     const raw = fs.readFileSync(DATA_FILE, 'utf8')
     cache = (JSON.parse(raw) as CostLogEntry[]).map((e) => ({
       ...e,
@@ -101,14 +111,9 @@ function load(): CostLogEntry[] {
     }))
   } catch {
     cache = seedLogs()
-    persist(cache)
+    persistSafe(cache)
   }
-  return cache
-}
-
-function persist(logs: CostLogEntry[]) {
-  ensureDir()
-  fs.writeFileSync(DATA_FILE, JSON.stringify(logs, null, 2), 'utf8')
+  return cache ?? seedLogs()
 }
 
 export function recordAiUsage(input: {
@@ -148,7 +153,7 @@ export function recordAiUsage(input: {
   logs.unshift(entry)
   // Keep last 5k entries
   if (logs.length > 5000) logs.length = 5000
-  persist(logs)
+  persistSafe(logs)
   return entry
 }
 

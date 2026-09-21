@@ -1,5 +1,5 @@
 import type { AskDraftPlan, DraftGuideAction, DraftGuideRequest } from '@/lib/api/ai-types'
-import { getDraftPlaybook } from '@/lib/editor/draft-playbooks'
+import { getDraftPlaybook } from '@/lib/editor/ai/draft/draft-playbooks'
 
 function planContext(plan: AskDraftPlan): string {
   const playbook = getDraftPlaybook(plan.contentType)

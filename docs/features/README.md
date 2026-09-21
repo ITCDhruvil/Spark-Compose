@@ -7,6 +7,10 @@ Product capabilities split by how they work:
 | **Smart features** | Fast authoring without AI | [smart-features/README.md](./smart-features/README.md) |
 | **AI features** | Spark AI — writing & analytics | [ai-features/README.md](./ai-features/README.md) |
 
+## Ribbon
+
+Every control in the top toolbar, end to end: [ribbon-reference.md](./ribbon-reference.md).
+
 ## Quick reference
 
 **Smart (no tokens):** slash commands, markdown shortcuts, smart paste, tables, Spark Chart, chart blocks, drag handle, command palette, outline, focus mode.

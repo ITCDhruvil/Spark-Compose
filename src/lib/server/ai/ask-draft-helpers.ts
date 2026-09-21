@@ -8,7 +8,7 @@ import {
   formatPlaybookForPrompt,
   getDraftPlaybook,
   listDraftPlaybooks,
-} from '@/lib/editor/draft-playbooks'
+} from '@/lib/editor/ai/draft/draft-playbooks'
 
 const CONTENT_TYPES: ConstructionContentType[] = [
   'article',

@@ -33,14 +33,24 @@ export async function POST(req: Request) {
     const originalName = typeof file.name === 'string' ? file.name : 'upload.png'
     const ext = (originalName.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png'
     const filename = `${randomUUID()}.${ext}`
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await mkdir(uploadDir, { recursive: true })
-    await writeFile(path.join(uploadDir, filename), buffer)
+    const mime = mediaType || 'image/png'
+    const dataUrl = `data:${mime};base64,${buffer.toString('base64')}`
 
-    return NextResponse.json({
-      url: `/uploads/${filename}`,
-      filename,
-    })
+    try {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+      await mkdir(uploadDir, { recursive: true })
+      await writeFile(path.join(uploadDir, filename), buffer)
+      return NextResponse.json({
+        url: `/uploads/${filename}`,
+        filename,
+      })
+    } catch {
+      // Vercel cannot persist files under public/; return an inline data URL instead.
+      return NextResponse.json({
+        url: dataUrl,
+        filename,
+      })
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Upload failed'
     return NextResponse.json({ error: message }, { status: 500 })

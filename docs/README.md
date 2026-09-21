@@ -51,6 +51,11 @@ How to embed the editor in another app (including mobile WebView) and how to tur
 - [Mobile integration guide](./integration/mobile-integration.md)
 - [The `ai` toggle](./integration/ai-toggle.md)
 
+### General reusable cases
+Real-world problems solvable by tweaking Spark Compose features (domain packs, playbooks, embedding, RAG, metering).
+
+- [General reusable cases index](./General%20Reusable%20cases/README.md)
+
 ## Related material
 
 Older design notes live under `docs/superpowers/` (internal planning). This `docs/` tree is the main product documentation.

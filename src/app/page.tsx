@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { BarChart3 } from 'lucide-react'
-import { RichEditor } from '@/components/editor/rich-editor'
+import { RichEditor } from '@/components/editor'
 
 export default function Home() {
   const [content, setContent] = useState('')

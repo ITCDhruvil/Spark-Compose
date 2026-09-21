@@ -9,7 +9,7 @@ import {
   type DraftImageAnalysis,
 } from '@/lib/server/ai/prompts'
 import { getCorpusText } from '@/lib/server/ai/rag-store'
-import { getDraftPlaybook } from '@/lib/editor/draft-playbooks'
+import { getDraftPlaybook } from '@/lib/editor/ai/draft/draft-playbooks'
 
 function resolveImages(body: ConstructionDraftRequest): ConstructionDraftImage[] {
   if (body.articleImages?.length) return body.articleImages

@@ -19,6 +19,10 @@ Standard rich-text formatting must stay one click away for users who do not use 
 - **Spark AI** ribbon — all AI toggles and feature catalog
 - Overflow **More** menu when the window is narrow
 
+## Full control-by-control reference
+
+Every button, dropdown, and dialog in the ribbon: [../ribbon-reference.md](../ribbon-reference.md).
+
 ## Notes
 
 - `editor-toolbar.tsx` with responsive overflow (`use-toolbar-overflow.ts`)

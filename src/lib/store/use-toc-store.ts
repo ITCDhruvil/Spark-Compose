@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { TocTemplateId } from '@/lib/editor/toc-templates'
+import type { TocTemplateId } from '@/lib/editor/smart/document-outline/toc-templates'
 
 interface TocStore {
   template: TocTemplateId

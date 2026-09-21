@@ -10,7 +10,7 @@ import { costOpts } from '@/lib/server/ai/cost-opts'
 import { chatJSON } from '@/lib/server/ai/openai-stream'
 import { draftEnhancePrompt } from '@/lib/server/ai/prompts'
 import { parseJsonBody } from '@/lib/server/ai/parse-json-body'
-import { sanitizeInsertMarkdown, toSecondPersonSummary } from '@/lib/editor/draft-enhance-insert'
+import { sanitizeInsertMarkdown, toSecondPersonSummary } from '@/lib/editor/ai/draft/draft-enhance-insert'
 
 const KINDS: DraftEnhanceKind[] = ['add', 'trend', 'strengthen', 'clarify']
 
@@ -33,22 +33,24 @@ function normalize(raw: Partial<DraftEnhanceResponse>): DraftEnhanceResponse {
 
   const improvements: DraftEnhanceImprovement[] = Array.isArray(raw.improvements)
     ? raw.improvements
-        .map((item, i) => {
+        .map((item, i): DraftEnhanceImprovement | null => {
           const im = item as Partial<DraftEnhanceImprovement>
           const title = String(im.title ?? '').trim()
           const reason = String(im.reason ?? '').trim()
           const suggestion = String(im.suggestion ?? '').trim()
           const insertRaw = String(im.insertMarkdown ?? '').trim() || suggestion
           if (!title || !insertRaw) return null
-          return {
+          const afterHeading = String(im.afterHeading ?? '').trim()
+          const row: DraftEnhanceImprovement = {
             id: String(im.id ?? `imp_${i + 1}`).trim() || `imp_${i + 1}`,
             kind: asKind(im.kind),
             title,
             reason: reason || 'This would strengthen your draft.',
             suggestion: suggestion || title,
             insertMarkdown: sanitizeInsertMarkdown(insertRaw, title),
-            afterHeading: String(im.afterHeading ?? '').trim() || undefined,
           }
+          if (afterHeading) row.afterHeading = afterHeading
+          return row
         })
         .filter((x): x is DraftEnhanceImprovement => x != null)
         .slice(0, 5)

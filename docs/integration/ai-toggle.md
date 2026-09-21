@@ -17,9 +17,9 @@ ai?: boolean | { enabled?: boolean }
 <RichEditor ai={false} />
 ```
 
-Resolver: [`src/lib/editor/ai-capabilities.ts`](../../src/lib/editor/ai-capabilities.ts)
+Resolver: [`src/lib/editor/ai/plugin/ai-capabilities.ts`](../../src/lib/editor/ai/plugin/ai-capabilities.ts)
 
-Context for child components: [`src/lib/editor/editor-ai-context.tsx`](../../src/lib/editor/editor-ai-context.tsx)
+Context for child components: [`src/lib/editor/ai/plugin/editor-ai-context.tsx`](../../src/lib/editor/ai/plugin/editor-ai-context.tsx)
 
 ## What gets gated when AI is off
 

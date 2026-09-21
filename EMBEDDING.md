@@ -19,7 +19,7 @@ See also [docs/introduction/smart-vs-ai.md](docs/introduction/smart-vs-ai.md).
 Mount the editor with AI turned off:
 
 ```tsx
-import { RichEditor } from '@/components/editor/rich-editor'
+import { RichEditor } from '@/components/editor'
 
 <RichEditor
   ai={false}
@@ -54,16 +54,22 @@ TipTap is a **web** editor. Typical approach:
 
 This is not a React Native native component library.
 
-## Folder map (for later extraction)
+## Folder map (feature-named subfolders)
 
 | Path | Role |
 |------|------|
-| `src/components/editor/` + `src/lib/editor/` | Editor UI + smart logic |
-| `src/components/editor/ai/` | Spark AI UI + hooks |
+| `src/components/editor/core/<feature>/` | Toolbar, links, images, media, lists, dialogs, etc. |
+| `src/components/editor/smart/<feature>/` | Slash commands, paste, tables, spark-chart, TOC, spell-check |
+| `src/lib/editor/core/<feature>/` + `smart/<feature>/` | Smart logic (paste, slash, chart-from-table) |
+| `src/components/editor/ai/<feature>/` | Spark AI UI + AI TipTap extensions |
+| `src/lib/editor/ai/plugin/` | `ai` prop resolver + React context |
+| `src/lib/editor/ai/<feature>/` | Ask, draft, writing-tools helpers |
 | `src/app/api/ai/` | LLM API routes |
 | `src/lib/api/ai-*.ts` | Client for those routes |
 | `src/lib/server/ai/` | Prompts, OpenAI streaming, cost |
-| `src/lib/editor/ai-capabilities.ts` | Host `ai` prop resolver |
+| `src/shared/ui/` | Shared dialogs / buttons |
+
+Full tree: [docs/getting-started/project-structure.md](docs/getting-started/project-structure.md)
 
 ## Acceptance check
 
